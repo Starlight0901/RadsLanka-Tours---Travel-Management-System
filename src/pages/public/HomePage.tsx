@@ -1,4 +1,4 @@
-import heroBackground from '@/assets/background_hero_image.png'
+import heroBackground from '@/assets/background_hero_image-DVihLKhs.jpg'
 import { PageMeta } from '@/components/common/PageMeta.tsx'
 import { DestinationCard } from '@/components/destinations/DestinationCard.tsx'
 import { HomeInquirySection } from '@/components/home/HomeInquirySection.tsx'
