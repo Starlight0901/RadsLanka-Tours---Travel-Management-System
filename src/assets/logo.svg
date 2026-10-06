@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" role="img" aria-label="RadsLanka Tours">
+  <rect width="64" height="64" rx="14" fill="#0F3D4C"/>
+  <circle cx="44" cy="20" r="8" fill="#C4923A"/>
+  <path d="M8 40c8-8 16-8 24 0s16 8 24 0" stroke="#F7F1E8" stroke-width="3" stroke-linecap="round"/>
+  <path d="M8 50c8-8 16-8 24 0s16 8 24 0" stroke="#D4A574" stroke-width="3" stroke-linecap="round"/>
+</svg>

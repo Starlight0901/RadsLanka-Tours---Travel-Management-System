@@ -1,0 +1,88 @@
+import type { CatalogVehicle } from '@/types/vehicles.ts'
+
+export const mockVehicles: CatalogVehicle[] = [
+  {
+    id: 'vehicle-executive-sedan',
+    slug: 'executive-luxury-sedan',
+    name: 'Executive Luxury Sedan',
+    model: 'Lexus ES / Toyota Camry Hybrid',
+    type: 'sedan',
+    typeLabel: 'Sedan',
+    idealFor: 'Ideal for: Couples, Solo Travelers, Honeymooners & Executive Travel',
+    description:
+      'Whisper-quiet hybrid tranquility built for unhurried journeys between boutique tea bungalows, secluded coastal hideaways, and private colonial villas.',
+    badge: '[Fleet badge]',
+    passengerCapacity: 3,
+    specs: [
+      { label: '[Passengers]', value: '[1–3]', icon: 'group' },
+      { label: '[Luggage]', value: '[2 large]', icon: 'luggage' },
+      { label: '[Best for]', value: '[City & coast]', icon: 'route' },
+    ],
+    features: ['[Climate-controlled cabin]', '[Complimentary Wi-Fi]', '[Bottled water & cool towels]'],
+    image: { alt: 'Executive Luxury Sedan parked outside Ceylon colonial tea bungalow' },
+    published: true,
+  },
+  {
+    id: 'vehicle-vip-minivan',
+    slug: 'luxury-touring-van',
+    name: 'Luxury Touring Van / VIP Minivan',
+    model: 'Toyota HiAce VIP / Alphard',
+    type: 'van',
+    typeLabel: 'Van',
+    idealFor: 'Traveler Favorite for Families (4-7 guests) & Small Groups',
+    description:
+      'Our flagship touring vehicle. Expansive tinted windows, high ceiling walk-through ease, and swiveling captain chairs designed for seamless multi-day island loops.',
+    badge: '[Fleet badge]',
+    passengerCapacity: 7,
+    specs: [
+      { label: '[Passengers]', value: '[4–7]', icon: 'group' },
+      { label: '[Luggage]', value: '[Family load]', icon: 'luggage' },
+      { label: '[Best for]', value: '[Island loops]', icon: 'route' },
+    ],
+    features: ['[Captain chairs]', '[High ceiling walk-through]', '[Separate luggage hold]'],
+    image: { alt: 'VIP Touring Minivan overlooking lush misty tea plantation mountains' },
+    published: true,
+  },
+  {
+    id: 'vehicle-prado',
+    slug: 'premium-4x4-suv',
+    name: 'Premium 4x4 SUV',
+    model: 'Toyota Land Cruiser Prado 4WD',
+    type: 'suv',
+    typeLabel: '4x4 SUV',
+    idealFor: 'Highland Tea Trails, Safari Borders & Off-Path Sanctuaries',
+    description:
+      'Commanding presence with genuine 4x4 capability. Conquers remote Knuckles mountain lodges, off-road tea factory ascents, and buffer-zone wilderness paths with quiet sophistication.',
+    badge: '[Fleet badge]',
+    passengerCapacity: 5,
+    specs: [
+      { label: '[Passengers]', value: '[1–5]', icon: 'group' },
+      { label: '[Luggage]', value: '[Safari kit]', icon: 'luggage' },
+      { label: '[Best for]', value: '[Highlands & parks]', icon: 'terrain' },
+    ],
+    features: ['[Genuine 4x4]', '[High clearance]', '[Wilderness-ready]'],
+    image: { alt: 'Toyota Land Cruiser Prado on a scenic safari wilderness path with wild elephants' },
+    published: true,
+  },
+  {
+    id: 'vehicle-mini-coach',
+    slug: 'vip-mini-coach',
+    name: 'VIP Mini Coach',
+    model: 'Toyota Coaster / Rosa Executive',
+    type: 'coach',
+    typeLabel: 'Mini Coach',
+    idealFor: 'Extended Families, Private Delegations & Tour Groups (8-14 guests)',
+    description:
+      'First-class group sanctuary. Deep reclining seats, personal overhead air vents, separate luggage holds, and built-in PA system for private commentary on ancient kingdoms.',
+    badge: '[Fleet badge]',
+    passengerCapacity: 14,
+    specs: [
+      { label: '[Passengers]', value: '[8–14]', icon: 'group' },
+      { label: '[Luggage]', value: '[Group hold]', icon: 'luggage' },
+      { label: '[Best for]', value: '[Group circuits]', icon: 'route' },
+    ],
+    features: ['[Reclining seats]', '[Overhead air vents]', '[Private PA commentary]'],
+    image: { alt: 'Executive Mini Coach driving along southern Sri Lankan coastal road' },
+    published: true,
+  },
+]
