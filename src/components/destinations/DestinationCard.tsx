@@ -20,7 +20,7 @@ export function DestinationCard({ destination, variant = 'editorial', className 
 
   if (variant === 'overlay') {
     return (
-      <article className={cn('relative isolate h-96 overflow-hidden rounded-2xl shadow-md', className)}>
+      <article className={cn('lift-card relative isolate h-96 overflow-hidden rounded-2xl shadow-md', className)}>
         <Link to={href} className="absolute inset-0">
           {image?.src ? (
             <img src={image.src} alt={imageAlt} className="h-full w-full object-cover transition duration-500 hover:scale-105" />
@@ -57,7 +57,7 @@ export function DestinationCard({ destination, variant = 'editorial', className 
   return (
     <article
       className={cn(
-        'flex h-full flex-col overflow-hidden rounded-2xl bg-surface-elevated shadow-[0_4px_24px_-2px_rgba(27,67,50,0.06)]',
+        'lift-card flex h-full flex-col overflow-hidden rounded-2xl bg-surface-elevated shadow-[0_4px_24px_-2px_rgba(27,67,50,0.06)]',
         className,
       )}
     >

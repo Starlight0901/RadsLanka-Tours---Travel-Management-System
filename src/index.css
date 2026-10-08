@@ -150,9 +150,261 @@ h3,
   animation: inquiry-float 5s ease-in-out infinite;
 }
 
+@keyframes inclusion-rise {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.inclusion-rise {
+  animation: inclusion-rise 0.45s ease both;
+}
+
+@keyframes inclusion-sheen {
+  0% {
+    transform: translateX(-140%) skewX(-16deg);
+    opacity: 0;
+  }
+  12% {
+    opacity: 0.22;
+  }
+  28% {
+    opacity: 0.08;
+  }
+  100% {
+    transform: translateX(420%) skewX(-16deg);
+    opacity: 0;
+  }
+}
+
+.inclusion-sheen {
+  background: linear-gradient(90deg, transparent, rgba(255, 223, 158, 0.16), transparent);
+  animation: inclusion-sheen 16s ease-in-out infinite;
+}
+
+@keyframes share-menu-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.share-menu-in {
+  animation: share-menu-in 0.18s ease;
+}
+
+.tour-glass {
+  background: rgba(255, 255, 255, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.65);
+  box-shadow:
+    0 12px 35px rgba(15, 40, 30, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(20px) saturate(1.2);
+  -webkit-backdrop-filter: blur(20px) saturate(1.2);
+}
+
+.why-glass {
+  background: rgba(255, 255, 255, 0.42);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  box-shadow:
+    0 12px 35px rgba(15, 40, 30, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(18px) saturate(1.25);
+  -webkit-backdrop-filter: blur(18px) saturate(1.25);
+}
+
+.reveal {
+  opacity: 0;
+  transform: translateY(30px);
+  transition:
+    opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.reveal:has(.reveal-card) {
+  transform: none;
+}
+
+.reveal.is-visible {
+  opacity: 1;
+  transform: none;
+}
+
+.reveal:not(.is-visible) .reveal-card {
+  opacity: 0;
+  transform: translateY(30px);
+  animation: none;
+}
+
+.reveal-card {
+  position: relative;
+}
+
+.reveal-card:hover {
+  z-index: 2;
+}
+
+.reveal.is-visible .reveal-card {
+  animation: reveal-card 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes reveal-card {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.lift-card {
+  position: relative;
+  z-index: 0;
+  transition:
+    transform 0.25s ease,
+    box-shadow 0.25s ease;
+}
+
+.lift-card:hover {
+  z-index: 2;
+  transform: scale(1.03);
+  box-shadow: 0 16px 36px -12px rgba(15, 40, 30, 0.18);
+}
+
+.lift-button {
+  transition:
+    transform 0.25s ease,
+    box-shadow 0.25s ease,
+    filter 0.25s ease,
+    background-color 0.25s ease;
+}
+
+.lift-button:hover {
+  transform: translateY(-2px) scale(1.04);
+  box-shadow: 0 10px 22px rgba(15, 40, 30, 0.14);
+}
+
+.why-glass:hover {
+  border-color: rgba(255, 255, 255, 0.85);
+  box-shadow:
+    0 16px 40px rgba(15, 40, 30, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.85);
+}
+
+@keyframes why-float-a {
+  0%,
+  100% {
+    transform: translateY(-6px);
+  }
+  50% {
+    transform: translateY(5px);
+  }
+}
+
+@keyframes why-float-b {
+  0%,
+  100% {
+    transform: translateY(6px);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+@keyframes why-float-c {
+  0%,
+  100% {
+    transform: translateY(-4px);
+  }
+  50% {
+    transform: translateY(7px);
+  }
+}
+
+@keyframes why-float-d {
+  0%,
+  100% {
+    transform: translateY(4px);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+.why-float-a {
+  animation: why-float-a 8.4s ease-in-out infinite;
+}
+
+.why-float-b {
+  animation: why-float-b 9.6s ease-in-out 0.8s infinite;
+}
+
+.why-float-c {
+  animation: why-float-c 7.6s ease-in-out 0.35s infinite;
+}
+
+.why-float-d {
+  animation: why-float-d 10.2s ease-in-out 1.1s infinite;
+}
+
+@keyframes why-marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.why-marquee-track {
+  animation: why-marquee 48s linear infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .inquiry-float-card {
+  .inquiry-float-card,
+  .inclusion-rise,
+  .inclusion-sheen,
+  .share-menu-in,
+  .why-float-a,
+  .why-float-b,
+  .why-float-c,
+  .why-float-d,
+  .why-marquee-track {
     animation: none;
+  }
+
+  .why-marquee {
+    overflow-x: auto;
+  }
+
+  .why-marquee-track > ul[aria-hidden='true'] {
+    display: none;
+  }
+
+  .reveal,
+  .reveal-card,
+  .reveal.is-visible .reveal-card,
+  .reveal:not(.is-visible) .reveal-card {
+    opacity: 1;
+    transform: none;
+    animation: none;
+    transition: none;
+  }
+
+  .lift-card:hover,
+  .lift-button:hover {
+    transform: none;
   }
 }
 

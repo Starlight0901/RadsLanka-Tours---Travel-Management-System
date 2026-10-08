@@ -1,4 +1,5 @@
 import logoSrc from '@/assets/logo.png'
+import logoWhiteSrc from '@/assets/logo_white.png'
 
 /**
  * Central public-site chrome configuration.
@@ -8,6 +9,10 @@ export const siteConfig = {
   name: 'RadsLanka Tours',
   logo: {
     src: logoSrc,
+    alt: 'RadsLanka Tours',
+  },
+  logoOnDark: {
+    src: logoWhiteSrc,
     alt: 'RadsLanka Tours',
   },
   tagline: 'Explore Sri Lanka with Local Experts',

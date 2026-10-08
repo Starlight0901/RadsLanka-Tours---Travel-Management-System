@@ -13,17 +13,22 @@ type TourBookingCardProps = {
   tour: CatalogTour
 }
 
+function formatTourPrice(priceLabel?: string): string {
+  if (!priceLabel) {
+    return '[Price]'
+  }
+  if (/^LKR\b/i.test(priceLabel)) {
+    return priceLabel
+  }
+
+  return `LKR ${priceLabel}`
+}
+
 const travelerOptions = [
   { value: '2', label: '2 travelers' },
   { value: '3', label: '3 travelers' },
   { value: '4', label: '4 travelers' },
   { value: '5+', label: '5+ travelers' },
-]
-
-const stayOptions = [
-  { value: 'boutique', label: '[Stay tier]' },
-  { value: 'heritage', label: '[Heritage tier]' },
-  { value: 'luxury', label: '[Luxury tier]' },
 ]
 
 export function TourBookingCard({ tour }: TourBookingCardProps) {
@@ -37,19 +42,18 @@ export function TourBookingCard({ tour }: TourBookingCardProps) {
     params.set('tour', tour.slug)
     params.set('date', String(data.get('departureDate') ?? ''))
     params.set('travelers', String(data.get('travelers') ?? ''))
-    params.set('stay', String(data.get('stayTier') ?? ''))
     params.set('contact', String(data.get('contact') ?? ''))
     navigate(`${paths.inquiry}?${params.toString()}`)
   }
 
   return (
-    <aside className="rounded-2xl border border-border bg-surface-elevated p-6 shadow-[0_12px_40px_-12px_rgba(27,67,50,0.18)] lg:sticky lg:top-28">
+    <aside className="rounded-2xl border border-border bg-surface-elevated p-6 shadow-[0_12px_40px_-12px_rgba(27,67,50,0.18)]">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-[11px] font-bold tracking-[0.55px] text-muted uppercase">All-inclusive from</p>
+          <p className="text-[11px] font-bold tracking-[0.55px] text-muted uppercase">From</p>
           <p className="mt-1">
-            <span className="text-4xl font-bold text-brand">{tour.priceLabel ?? '[Price]'}</span>
-            {tour.priceNote ? <span className="ml-1 text-sm text-muted">{tour.priceNote}</span> : null}
+            <span className="text-4xl font-bold text-brand">{formatTourPrice(tour.priceLabel)}</span>
+            {tour.priceNote ? <span className="mt-1 block text-sm font-medium text-muted">{tour.priceNote}</span> : null}
           </p>
         </div>
         <span className="rounded-xl bg-surface-mist px-3 py-2 text-center text-[11px] font-bold tracking-[0.4px] text-brand uppercase">
@@ -75,10 +79,7 @@ export function TourBookingCard({ tour }: TourBookingCardProps) {
 
       <form className="mt-6 space-y-4" onSubmit={onSubmit}>
         <FormInput name="departureDate" label="Preferred Departure Date" type="date" required />
-        <div className="grid grid-cols-2 gap-3">
-          <Select name="travelers" label="Travelers" options={travelerOptions} defaultValue="2" />
-          <Select name="stayTier" label="Stay Tier" options={stayOptions} defaultValue="boutique" />
-        </div>
+        <Select name="travelers" label="Travelers" options={travelerOptions} defaultValue="2" />
         <FormInput
           name="contact"
           label="Your Email / WhatsApp"
@@ -86,18 +87,14 @@ export function TourBookingCard({ tour }: TourBookingCardProps) {
           placeholder="e.g. yourname@domain.com"
           required
         />
-        <Button type="submit" className="w-full">
+        <Button type="submit" className="lift-button w-full">
           Request this journey
           <Icon name="arrow_forward" className="text-[12px]" />
         </Button>
         <ButtonLinkFallback href={whatsappHref} />
       </form>
 
-      <p className="mt-5 flex items-start gap-2 text-[13px] text-muted">
-        <Icon name="verified_user" className="mt-0.5 text-[16px] text-brand" />
-        [Booking trust note from Figma]
-      </p>
-      <Link to={paths.inquiry} className="mt-3 inline-flex min-h-11 items-center gap-2 text-[13px] font-semibold text-brand">
+      <Link to={paths.inquiry} className="mt-5 inline-flex min-h-11 items-center gap-2 text-[13px] font-semibold text-brand">
         <Icon name="edit_note" className="text-[16px]" />
         Customize this itinerary
       </Link>
@@ -121,7 +118,7 @@ function ButtonLinkFallback({ href }: { href: string | null }) {
       className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-control border border-border text-sm font-semibold text-brand"
     >
       <Icon name="chat" className="text-[16px]" />
-      WhatsApp a specialist
+      Talk to Us on WhatsApp
     </a>
   )
 }

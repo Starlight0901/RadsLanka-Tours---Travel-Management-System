@@ -63,6 +63,21 @@ export async function listAllDestinations(): Promise<DestinationRecord[]> {
     .sort((a, b) => a.name.localeCompare(b.name))
 }
 
+export async function listPublishedDestinations(): Promise<DestinationRecord[]> {
+  if (!db) {
+    throw new Error('Firebase is not configured.')
+  }
+
+  const snapshot = await getDocs(
+    query(collection(db, FIRESTORE_COLLECTIONS.destinations), where('published', '==', true)),
+  )
+
+  return snapshot.docs
+    .map((item) => toDestination(item.id, item.data()))
+    .filter((destination) => destination.published)
+    .sort((a, b) => a.name.localeCompare(b.name))
+}
+
 export async function createDestination(input: {
   name: string
   slug: string

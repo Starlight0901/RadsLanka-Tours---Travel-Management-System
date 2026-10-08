@@ -1,6 +1,7 @@
 import { Route, Routes } from 'react-router-dom'
 import { AdminLayout } from '@/layouts/AdminLayout.tsx'
 import { PublicLayout } from '@/layouts/PublicLayout.tsx'
+import { AdminAccommodationsPage } from '@/pages/admin/AdminAccommodationsPage.tsx'
 import { AdminDashboardPage } from '@/pages/admin/AdminDashboardPage.tsx'
 import { AdminDestinationsPage } from '@/pages/admin/AdminDestinationsPage.tsx'
 import { AdminGalleryPage } from '@/pages/admin/AdminGalleryPage.tsx'
@@ -10,6 +11,7 @@ import { AdminReviewsPage } from '@/pages/admin/AdminReviewsPage.tsx'
 import { AdminSettingsPage } from '@/pages/admin/AdminSettingsPage.tsx'
 import { AdminToursPage } from '@/pages/admin/AdminToursPage.tsx'
 import { AdminVehiclesPage } from '@/pages/admin/AdminVehiclesPage.tsx'
+import { AdminWhyTravelersPage } from '@/pages/admin/AdminWhyTravelersPage.tsx'
 import { AdminLoginPage } from '@/pages/auth/AdminLoginPage.tsx'
 import { AboutPage } from '@/pages/public/AboutPage.tsx'
 import { ContactPage } from '@/pages/public/ContactPage.tsx'
@@ -41,6 +43,8 @@ export function AppRoutes() {
           <Route index element={<AdminDashboardPage />} />
           <Route path="tours" element={<AdminToursPage />} />
           <Route path="destinations" element={<AdminDestinationsPage />} />
+          <Route path="accommodations" element={<AdminAccommodationsPage />} />
+          <Route path="why-travelers" element={<AdminWhyTravelersPage />} />
           <Route path="vehicles" element={<AdminVehiclesPage />} />
           <Route path="reviews" element={<AdminReviewsPage />} />
           <Route path="gallery" element={<AdminGalleryPage />} />

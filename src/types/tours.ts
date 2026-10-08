@@ -16,11 +16,22 @@ export type TourItineraryDay = {
   summary: string
   stay?: string
   meals?: string
+  locations?: string[]
 }
 
 export type TourPracticalNote = {
   title: string
   body: string
+}
+
+export type CatalogAccommodation = {
+  id: string
+  name: string
+  description: string
+  type: string
+  location: string
+  imageSrc?: string
+  imageAlt?: string
 }
 
 export type CatalogTour = {
@@ -31,8 +42,10 @@ export type CatalogTour = {
   fullDescription: string
   duration: string
   durationDays: number
+  price?: number
   priceLabel?: string
   priceNote?: string
+  travelStyle?: string
   journeyStyle?: string
   accommodation?: string
   routeLabel?: string
@@ -49,6 +62,8 @@ export type CatalogTour = {
   exclusions: string[]
   practicalNotes: TourPracticalNote[]
   destinationIds: string[]
+  destinationNames?: string[]
+  accommodations?: CatalogAccommodation[]
   relatedTourIds: string[]
   published: boolean
 }

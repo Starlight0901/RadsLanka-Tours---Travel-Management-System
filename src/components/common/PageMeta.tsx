@@ -1,11 +1,11 @@
-import { usePageMeta } from '@/hooks/usePageMeta.ts'
+import { usePageMeta, type PageMetaOptions } from '@/hooks/usePageMeta.ts'
 
-type PageMetaProps = {
+type PageMetaProps = PageMetaOptions & {
   title: string
   description: string
 }
 
-export function PageMeta({ title, description }: PageMetaProps) {
-  usePageMeta(title, description)
+export function PageMeta({ title, description, image, url, type, socialTitle }: PageMetaProps) {
+  usePageMeta(title, description, { image, url, type, socialTitle })
   return null
 }

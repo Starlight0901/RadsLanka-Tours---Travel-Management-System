@@ -39,7 +39,7 @@ export function ReviewCard({
   const meta = [country, dateLabel].filter(Boolean).join(' • ')
 
   return (
-    <article className="flex h-full flex-col justify-between rounded-2xl bg-surface-elevated p-6 shadow-[0_4px_20px_-2px_rgba(27,67,50,0.06)] lg:p-8">
+    <article className="lift-card flex h-full flex-col justify-between rounded-2xl bg-surface-elevated p-6 shadow-[0_4px_20px_-2px_rgba(27,67,50,0.06)] lg:p-8">
       <div>
         <div className="flex items-start gap-3">
           {photoUrl ? (

@@ -57,6 +57,8 @@ export type TourListFilters = {
   region: string
   style: string
   quick: string
+  tags: string[]
+  budget: string
   sort: 'featured' | 'duration'
 }
 
@@ -66,7 +68,27 @@ export const defaultTourListFilters: TourListFilters = {
   region: 'all',
   style: 'all',
   quick: '',
+  tags: [],
+  budget: 'all',
   sort: 'featured',
+}
+
+export const tourBudgetFilters = [
+  { value: 'all', label: 'Any budget' },
+  { value: 'under-150', label: 'Under LKR 150,000' },
+  { value: '150-400', label: 'LKR 150,000 – 400,000' },
+  { value: '400-800', label: 'LKR 400,000 – 800,000' },
+  { value: '800-plus', label: 'LKR 800,000+' },
+] as const
+
+function matchesBudget(price: number | undefined, budget: string) {
+  if (budget === 'all') return true
+  if (typeof price !== 'number' || !Number.isFinite(price) || price <= 0) return false
+  if (budget === 'under-150') return price < 150_000
+  if (budget === '150-400') return price >= 150_000 && price < 400_000
+  if (budget === '400-800') return price >= 400_000 && price < 800_000
+  if (budget === '800-plus') return price >= 800_000
+  return true
 }
 
 function matchesDuration(tour: CatalogTour, duration: string) {
@@ -77,21 +99,49 @@ function matchesDuration(tour: CatalogTour, duration: string) {
   return true
 }
 
-export function filterPublishedTours(filters: TourListFilters): CatalogTour[] {
+export function filterTours(tours: CatalogTour[], filters: TourListFilters): CatalogTour[] {
   const query = filters.query.trim().toLowerCase()
 
-  const matches = listPublishedTours().filter((tour) => {
-    const haystack = [tour.title, tour.shortDescription, tour.routeLabel, ...tour.tags, ...tour.destinationIds]
+  const matches = tours.filter((tour) => {
+    const haystack = [
+      tour.title,
+      tour.shortDescription,
+      tour.fullDescription,
+      tour.routeLabel,
+      tour.travelStyle,
+      ...(tour.destinationNames ?? []),
+      ...tour.tags,
+      ...tour.destinationIds,
+    ]
+      .filter(Boolean)
       .join(' ')
       .toLowerCase()
     const matchesQuery = !query || haystack.includes(query)
+    const selectedTags = filters.tags.map((tag) => tag.toLowerCase())
+    const matchesTags =
+      selectedTags.length === 0 || tour.tags.some((tag) => selectedTags.includes(tag.toLowerCase()))
     const matchesRegion =
       filters.region === 'all' ||
       tour.destinationIds.includes(filters.region) ||
       (filters.region === 'nuwara-eliya' && tour.destinationIds.includes('ella'))
-    const matchesStyle = filters.style === 'all' || tour.category === filters.style
-    const matchesQuick = !filters.quick || tour.category === filters.quick || tour.tags.includes(filters.quick)
-    return matchesQuery && matchesDuration(tour, filters.duration) && matchesRegion && matchesStyle && matchesQuick
+    const selectedStyle = filters.style.trim().toLowerCase()
+    const matchesStyle =
+      selectedStyle === 'all' ||
+      tour.category.toLowerCase() === selectedStyle ||
+      (tour.travelStyle ?? '').toLowerCase() === selectedStyle
+    const matchesQuick =
+      !filters.quick ||
+      tour.category === filters.quick ||
+      tour.tags.some((tag) => tag.toLowerCase() === filters.quick.toLowerCase())
+    return (
+      matchesQuery &&
+      matchesTags &&
+      matchesDuration(tour, filters.duration) &&
+      matchesRegion &&
+      matchesStyle &&
+      matchesQuick &&
+      matchesBudget(tour.price, filters.budget)
+    )
   })
 
   return [...matches].sort((a, b) => {
@@ -100,4 +150,8 @@ export function filterPublishedTours(filters: TourListFilters): CatalogTour[] {
     }
     return Number(Boolean(b.featured)) - Number(Boolean(a.featured))
   })
+}
+
+export function filterPublishedTours(filters: TourListFilters): CatalogTour[] {
+  return filterTours(listPublishedTours(), filters)
 }

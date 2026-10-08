@@ -1,4 +1,5 @@
 import {
+  BedDouble,
   Car,
   Image,
   Inbox,
@@ -7,9 +8,11 @@ import {
   Map,
   MapPin,
   Settings,
+  Sparkles,
   Star,
 } from 'lucide-react'
 import { NavLink } from 'react-router-dom'
+import { siteConfig } from '@/config/site.ts'
 import { useAuth } from '@/hooks/useAuth.ts'
 import { paths } from '@/routes/paths.ts'
 import { cn } from '@/utils/cn.ts'
@@ -18,6 +21,8 @@ const items = [
   { to: paths.admin.root, label: 'Dashboard', icon: LayoutDashboard, end: true },
   { to: paths.admin.tours, label: 'Tours', icon: Map },
   { to: paths.admin.destinations, label: 'Destinations', icon: MapPin },
+  { to: paths.admin.accommodations, label: 'Accommodations', icon: BedDouble },
+  { to: paths.admin.whyTravelers, label: 'Why Travelers', icon: Sparkles },
   { to: paths.admin.vehicles, label: 'Vehicles', icon: Car },
   { to: paths.admin.reviews, label: 'Reviews', icon: Star },
   { to: paths.admin.gallery, label: 'Gallery', icon: Image },
@@ -31,8 +36,8 @@ export function AdminSidebar() {
   return (
     <aside className="flex w-64 shrink-0 flex-col border-r border-slate-200 bg-white">
       <div className="border-b border-slate-200 px-5 py-5">
-        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Admin</p>
-        <p className="mt-1 text-lg font-semibold text-slate-900">RadsLanka Tours</p>
+        <img src={siteConfig.logo.src} alt={siteConfig.logo.alt} className="h-16 w-auto object-contain object-left" />
+        <p className="mt-3 text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Admin</p>
       </div>
       <nav className="flex-1 space-y-1 p-3" aria-label="Admin">
         {items.map((item) => {

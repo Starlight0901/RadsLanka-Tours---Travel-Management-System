@@ -18,6 +18,8 @@ export const paths = {
     root: '/admin',
     tours: '/admin/tours',
     destinations: '/admin/destinations',
+    accommodations: '/admin/accommodations',
+    whyTravelers: '/admin/why-travelers',
     vehicles: '/admin/vehicles',
     reviews: '/admin/reviews',
     gallery: '/admin/gallery',

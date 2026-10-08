@@ -1,18 +1,308 @@
-rules_version='2'
+rules_version = '2';
+
+// ===============================================================
+// Assumed Data Model
+// ===============================================================
+//
+// Collection: admins
+// Document ID: Firebase Authentication UID
+// Fields:
+//   - email: string
+//   - displayName: string
+//   - role: "owner" | "admin"
+//   - createdAt: timestamp
+// There is no client bootstrap. A non-admin cannot create admins/{uid}.
+//
+// Collection: tours
+// Fields: title, slug, description, duration, price, travelStyleId, destinations,
+//   accommodationIds, tagIds, itinerary, included, excluded, images, featured, popular, published,
+//   pricingBasis ("per_person" | "for_2" | "for_4" | "custom"), pricingCustomLabel,
+//   createdAt, updatedAt
+// Public read requires published == true.
+//
+// Collection: travelStyles
+// Fields: name, slug, createdAt, updatedAt
+// Public read is required so published tours can show the travel style name.
+// Writes are admin-only.
+//
+// Collection: tags
+// Fields: name, slug, createdAt, updatedAt
+// Public read is required so published tours can show their tag names.
+// Writes are admin-only. Documents contain only the label.
+//
+// Collection: accommodations
+// Fields: name, description, type, location, images, published,
+//   createdAt, updatedAt
+// Public read requires published == true.
+//
+// Collection: whyTravelerItems
+// Fields: title, description, icon, published, order, createdAt, updatedAt
+// Public read requires published == true. Writes are admin-only.
+//
+// Collection: destinations
+// Fields: name, slug, description, coverImage, thingsToDo, placesToVisit,
+//   bestTime, travelInfo, gallery, relatedTours, published,
+//   availableForInquiry, createdAt, updatedAt
+// Public read requires published == true.
+//
+// Collection: vehicles
+// Fields: name, type, description, passengerCapacity, luggageCapacity,
+//   airConditioning, features, images, published, createdAt, updatedAt
+// Public read requires published == true.
+//
+// Collection: reviews
+// Fields: travelerName, email, country, rating, review, photo, tourId,
+//   travelDate, status ("pending" | "approved" | "rejected"), featured,
+//   createdAt, updatedAt, publishedAt
+// Public read requires status == "approved".
+// Public create requires status == "pending" and featured == false.
+// Approved documents include traveler email. Rules cannot hide one field.
+//
+// Collection: gallery
+// Fields: imageUrl, publicId, category, caption, altText, published, createdAt
+// Public read requires published == true.
+//
+// Collection: inquiries
+// Fields: type ("package_tour" | "custom_tour" | "general"), name, email,
+//   phone, optional travel fields, message, status
+//   ("New" | "Contacted" | "Follow-up" | "Converted" | "Closed"),
+//   createdAt, updatedAt
+// Public create requires status == "New". No public read, update, or delete.
+//
+// Collection: siteSettings
+// Singleton website settings: logo, phone, whatsapp, email, address,
+//   socialLinks, heroText, footer
+// Public read is intentional. Writes are admin-only.
+//
+// Admin CMS writes are authorized by role and are not field-validated here.
+// Anonymous creates are limited to the known fields and the status rules above.
+//
+// ===============================================================
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /{document=**} {
-      // This rule allows anyone with your database reference to view, edit,
-      // and delete all data in your database. It is useful for getting
-      // started, but it is configured to expire after 30 days because it
-      // leaves your app open to attackers. At that time, all client
-      // requests to your database will be denied.
-      //
-      // Make sure to write security rules for your app before that time, or
-      // else all client requests to your database will be denied until you
-      // update your rules.
-      allow read, write: if request.time < timestamp.date(2026, 10, 28);
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function adminPath() {
+      return /databases/$(database)/documents/admins/$(request.auth.uid);
+    }
+
+    function isAdmin() {
+      return isAuthenticated()
+        && exists(adminPath())
+        && get(adminPath()).data.role in ['owner', 'admin'];
+    }
+
+    function isPublished() {
+      return resource.data.published == true;
+    }
+
+    function boundedString(value, maxLen) {
+      return value is string && value.size() <= maxLen;
+    }
+
+    function optionalBoundedString(data, field, maxLen) {
+      return !(field in data) || boundedString(data[field], maxLen);
+    }
+
+    function boundedList(value, maxSize) {
+      return value is list && value.size() <= maxSize;
+    }
+
+    function optionalBoundedList(data, field, maxSize) {
+      return !(field in data) || boundedList(data[field], maxSize);
+    }
+
+    function optionalIntInRange(data, field, minValue, maxValue) {
+      return !(field in data)
+        || (data[field] is int && data[field] >= minValue && data[field] <= maxValue);
+    }
+
+    function isMediaAsset(value) {
+      return value is map
+        && value.keys().hasOnly(['imageUrl', 'publicId', 'altText', 'caption'])
+        && value.keys().hasAll(['imageUrl', 'publicId', 'altText'])
+        && boundedString(value.imageUrl, 2000)
+        && boundedString(value.publicId, 500)
+        && boundedString(value.altText, 300)
+        && (!('caption' in value) || boundedString(value.caption, 500));
+    }
+
+    function isValidPublicInquiry(data) {
+      return data.keys().hasOnly([
+          'type',
+          'name',
+          'email',
+          'phone',
+          'travelDate',
+          'returnDate',
+          'travellers',
+          'adults',
+          'children',
+          'country',
+          'tourId',
+          'destinations',
+          'destinationIds',
+          'otherDestination',
+          'interests',
+          'budget',
+          'accommodation',
+          'vehiclePreference',
+          'message',
+          'status',
+          'createdAt',
+          'updatedAt',
+        ])
+        && data.keys().hasAll([
+          'type',
+          'name',
+          'email',
+          'phone',
+          'message',
+          'status',
+          'createdAt',
+          'updatedAt',
+        ])
+        && data.type in ['package_tour', 'custom_tour', 'general']
+        && data.status == 'New'
+        && boundedString(data.name, 200)
+        && data.name.size() > 0
+        && boundedString(data.email, 320)
+        && data.email.size() > 0
+        && boundedString(data.phone, 40)
+        && data.phone.size() > 0
+        && boundedString(data.message, 4000)
+        && data.createdAt == request.time
+        && data.updatedAt == request.time
+        && optionalBoundedString(data, 'travelDate', 40)
+        && optionalBoundedString(data, 'returnDate', 40)
+        && optionalBoundedString(data, 'country', 100)
+        && optionalBoundedString(data, 'tourId', 128)
+        && optionalBoundedString(data, 'otherDestination', 200)
+        && optionalBoundedString(data, 'budget', 100)
+        && optionalBoundedString(data, 'accommodation', 200)
+        && optionalBoundedString(data, 'vehiclePreference', 200)
+        && optionalIntInRange(data, 'travellers', 1, 100)
+        && optionalIntInRange(data, 'adults', 0, 100)
+        && optionalIntInRange(data, 'children', 0, 100)
+        && optionalBoundedList(data, 'destinations', 40)
+        && optionalBoundedList(data, 'destinationIds', 40)
+        && optionalBoundedList(data, 'interests', 40);
+    }
+
+    function isValidPublicReview(data) {
+      return data.keys().hasOnly([
+          'travelerName',
+          'email',
+          'country',
+          'rating',
+          'review',
+          'photo',
+          'tourId',
+          'travelDate',
+          'status',
+          'featured',
+          'createdAt',
+          'updatedAt',
+          'publishedAt',
+        ])
+        && data.keys().hasAll([
+          'travelerName',
+          'email',
+          'country',
+          'rating',
+          'review',
+          'photo',
+          'tourId',
+          'travelDate',
+          'status',
+          'featured',
+          'createdAt',
+          'updatedAt',
+          'publishedAt',
+        ])
+        && data.status == 'pending'
+        && data.featured == false
+        && data.publishedAt == null
+        && boundedString(data.travelerName, 200)
+        && data.travelerName.size() > 0
+        && boundedString(data.email, 320)
+        && data.email.size() > 0
+        && boundedString(data.country, 100)
+        && boundedString(data.review, 5000)
+        && data.review.size() > 0
+        && boundedString(data.tourId, 128)
+        && boundedString(data.travelDate, 40)
+        && data.rating is number
+        && data.rating >= 1
+        && data.rating <= 5
+        && (data.photo == null || isMediaAsset(data.photo))
+        && data.createdAt == request.time
+        && data.updatedAt == request.time;
+    }
+
+    // Denied for everyone who is not already an owner or admin.
+    // Creating admins/{request.auth.uid} does not satisfy isAdmin().
+    match /admins/{uid} {
+      allow read, write: if isAdmin();
+    }
+
+    match /tours/{tourId} {
+      allow read: if isAdmin() || isPublished();
+      allow write: if isAdmin();
+    }
+
+    match /destinations/{destinationId} {
+      allow read: if isAdmin() || isPublished();
+      allow write: if isAdmin();
+    }
+
+    match /accommodations/{accommodationId} {
+      allow read: if isAdmin() || isPublished();
+      allow write: if isAdmin();
+    }
+
+    match /whyTravelerItems/{itemId} {
+      allow read: if isAdmin() || isPublished();
+      allow write: if isAdmin();
+    }
+
+    match /tags/{tagId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /travelStyles/{travelStyleId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /vehicles/{vehicleId} {
+      allow read: if isAdmin() || isPublished();
+      allow write: if isAdmin();
+    }
+
+    match /gallery/{galleryId} {
+      allow read: if isAdmin() || isPublished();
+      allow write: if isAdmin();
+    }
+
+    match /reviews/{reviewId} {
+      allow read: if isAdmin() || resource.data.status == 'approved';
+      allow create: if isAdmin() || isValidPublicReview(request.resource.data);
+      allow update, delete: if isAdmin();
+    }
+
+    match /inquiries/{inquiryId} {
+      allow read, update, delete: if isAdmin();
+      allow create: if isAdmin() || isValidPublicInquiry(request.resource.data);
+    }
+
+    match /siteSettings/{documentId} {
+      allow read: if true;
+      allow write: if isAdmin();
     }
   }
 }

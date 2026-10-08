@@ -20,7 +20,7 @@ export function SiteLogo({ className, imgClassName, onClick }: SiteLogoProps) {
       <img
         src={siteConfig.logo.src}
         alt=""
-        className={cn('h-10 w-auto max-w-[171px] object-contain object-left', imgClassName)}
+        className={cn('h-14 w-auto object-contain object-left lg:h-[4.5rem]', imgClassName)}
       />
     </Link>
   )

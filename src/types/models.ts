@@ -18,14 +18,28 @@ export type AdminProfile = {
   createdAt: FirestoreTimestamp
 }
 
+export type TourItineraryDay = {
+  day: number
+  title: string
+  description: string
+  locations: string[]
+}
+
+export type TourPricingBasis = 'per_person' | 'for_2' | 'for_4' | 'custom'
+
 export type Tour = {
   title: string
   slug: string
   description: string
   duration: string
   price: number
+  pricingBasis: TourPricingBasis
+  pricingCustomLabel: string
+  travelStyleId: string
   destinations: string[]
-  itinerary: string[]
+  accommodationIds: string[]
+  tagIds: string[]
+  itinerary: TourItineraryDay[]
   included: string[]
   excluded: string[]
   images: MediaAsset[]
@@ -53,12 +67,48 @@ export type Destination = {
   updatedAt: FirestoreTimestamp
 }
 
+export type TravelStyle = {
+  name: string
+  slug: string
+  createdAt: FirestoreTimestamp
+  updatedAt: FirestoreTimestamp
+}
+
+export type TourTag = {
+  name: string
+  slug: string
+  createdAt: FirestoreTimestamp
+  updatedAt: FirestoreTimestamp
+}
+
+export type WhyTravelerItem = {
+  title: string
+  description: string
+  icon: string
+  published: boolean
+  order: number
+  createdAt: FirestoreTimestamp
+  updatedAt: FirestoreTimestamp
+}
+
+export type Accommodation = {
+  name: string
+  description: string
+  type: string
+  location: string
+  images: MediaAsset[]
+  published: boolean
+  createdAt: FirestoreTimestamp
+  updatedAt: FirestoreTimestamp
+}
+
 export type Vehicle = {
   name: string
   type: string
   description: string
   passengerCapacity: number
   luggageCapacity: string
+  airConditioning: boolean
   features: string[]
   images: MediaAsset[]
   published: boolean
@@ -66,16 +116,22 @@ export type Vehicle = {
   updatedAt: FirestoreTimestamp
 }
 
+export type ReviewStatus = 'pending' | 'approved' | 'rejected'
+
 export type Review = {
   travelerName: string
+  email: string
   country: string
   rating: number
   review: string
   photo: MediaAsset | null
   tourId: string
-  date: FirestoreTimestamp
-  published: boolean
+  travelDate: string
+  status: ReviewStatus
   featured: boolean
+  createdAt: FirestoreTimestamp
+  updatedAt: FirestoreTimestamp
+  publishedAt: FirestoreTimestamp | null
 }
 
 export type GalleryItem = {
@@ -117,6 +173,18 @@ export type Inquiry = {
   updatedAt: FirestoreTimestamp
 }
 
+export type HeroTextStyle = 'eyebrow' | 'title' | 'subtitle'
+
+export type HeroTextBlock = {
+  text: string
+  style: HeroTextStyle
+}
+
+export type HomepageHeroContent = {
+  heroTextBlocks: HeroTextBlock[]
+  heroDescription: string
+}
+
 export type SiteSettings = {
   logo: MediaAsset | null
   phone: string
@@ -128,7 +196,8 @@ export type SiteSettings = {
     instagram?: string
     youtube?: string
   }
-  heroText: string
+  heroTextBlocks: HeroTextBlock[]
+  heroDescription: string
   footer: string
 }
 
@@ -136,6 +205,10 @@ export const FIRESTORE_COLLECTIONS = {
   admins: 'admins',
   tours: 'tours',
   destinations: 'destinations',
+  accommodations: 'accommodations',
+  whyTravelerItems: 'whyTravelerItems',
+  tags: 'tags',
+  travelStyles: 'travelStyles',
   vehicles: 'vehicles',
   reviews: 'reviews',
   gallery: 'gallery',

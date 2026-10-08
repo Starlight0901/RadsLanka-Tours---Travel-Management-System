@@ -15,7 +15,7 @@ export function TourCard({ tour }: TourCardProps) {
   const imageAlt = image?.alt ?? tour.title
 
   return (
-    <article className="flex h-full flex-col overflow-hidden rounded-2xl bg-surface-elevated shadow-[0_4px_24px_-2px_rgba(27,67,50,0.06)]">
+    <article className="lift-card flex h-full flex-col overflow-hidden rounded-2xl bg-surface-elevated shadow-[0_4px_24px_-2px_rgba(27,67,50,0.06)]">
       <Link to={href} className="relative block h-60 overflow-hidden lg:h-64">
         {image?.src ? (
           <img
@@ -70,30 +70,36 @@ export function TourCard({ tour }: TourCardProps) {
           <ul className="mt-3 flex flex-wrap gap-2 lg:mt-4">
             {tour.tags.map((tag) => (
               <li key={tag}>
-                <Badge>{tag}</Badge>
+                <Badge className="uppercase">{tag}</Badge>
               </li>
             ))}
           </ul>
         ) : null}
-      </div>
 
-      <div className="mt-auto flex items-center justify-between bg-surface-container px-4 py-4 lg:px-7">
-        {tour.priceLabel ? (
-          <p>
-            <span className="block text-[11px] font-bold tracking-[0.55px] text-muted uppercase">From</span>
-            <span className="text-lg font-bold text-brand">{tour.priceLabel}</span>
-            {tour.priceNote ? <span className="ml-1 text-[13px] text-muted">{tour.priceNote}</span> : null}
-          </p>
-        ) : (
-          <span />
-        )}
-        <Link
-          to={href}
-          className="inline-flex min-h-11 items-center gap-1 text-[15px] font-bold tracking-[0.15px] text-brand"
-        >
-          Explore Tour
-          <Icon name="arrow_forward" className="text-[12px]" />
-        </Link>
+        <div className="mt-auto flex flex-wrap items-center justify-between gap-3 pt-5">
+          {tour.priceLabel ? (
+            <div className="min-w-0 rounded-xl border border-[rgba(201,151,0,0.4)] bg-[rgba(201,151,0,0.12)] px-3 py-2">
+              <p className="text-[15px] leading-tight font-bold text-[#1B4332]">
+                {tour.priceLabel.startsWith('[')
+                  ? tour.priceLabel
+                  : /^LKR\b/i.test(tour.priceLabel)
+                    ? `From ${tour.priceLabel}`
+                    : `From LKR ${tour.priceLabel}`}
+              </p>
+              {tour.priceNote ? (
+                <p className="mt-0.5 text-[11px] font-medium text-[#1B4332]/75">{tour.priceNote}</p>
+              ) : null}
+            </div>
+          ) : (
+            <span />
+          )}
+          <Link
+            to={href}
+            className="lift-button inline-flex shrink-0 items-center rounded-full bg-[#C99700] px-4 py-2.5 text-[13px] font-bold text-white shadow-sm"
+          >
+            Explore Tour
+          </Link>
+        </div>
       </div>
     </article>
   )

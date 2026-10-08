@@ -5,7 +5,7 @@ import { WhatsAppButton } from '@/components/layout/WhatsAppButton.tsx'
 
 export function PublicLayout() {
   return (
-    <div className="flex min-h-screen flex-col overflow-x-hidden bg-surface text-ink">
+    <div className="flex min-h-screen flex-col overflow-x-clip bg-surface text-ink">
       <Header />
       <main className="flex-1 pb-20 lg:pb-0">
         <Outlet />

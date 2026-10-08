@@ -149,9 +149,9 @@ export function Footer() {
         <div className="grid grid-cols-4 gap-12 border-y border-white/10 py-12">
           <div>
             <img
-              src={siteConfig.logo.src}
-              alt={siteConfig.logo.alt}
-              className="h-10 w-auto max-w-[171px] object-contain object-left brightness-0 invert"
+              src={siteConfig.logoOnDark.src}
+              alt={siteConfig.logoOnDark.alt}
+              className="h-36 w-auto object-contain object-left"
             />
             <p className="mt-4 text-body">{siteConfig.footer.blurbDesktop}</p>
             <TrustBadge />
@@ -270,9 +270,9 @@ export function Footer() {
 
       <div className="mx-auto max-w-md px-4 pt-10 lg:hidden">
         <img
-          src={siteConfig.logo.src}
-          alt={siteConfig.logo.alt}
-          className="h-8 w-auto max-w-[137px] object-contain object-left brightness-0 invert"
+          src={siteConfig.logoOnDark.src}
+          alt={siteConfig.logoOnDark.alt}
+          className="h-32 w-auto object-contain object-left"
         />
         <p className="mt-3 text-[13px] leading-[21px]">{siteConfig.footer.blurbMobile}</p>
         <TrustBadge />

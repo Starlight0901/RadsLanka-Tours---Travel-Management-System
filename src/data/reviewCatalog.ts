@@ -9,6 +9,15 @@ export function listApprovedReviews(): CatalogReview[] {
   return mockReviews.filter(isApprovedReview)
 }
 
+/**
+ * Overall score for the public reviews heading.
+ * Catalog reviews are still placeholders and Firestore reviews are not wired,
+ * so this stays empty instead of presenting a fabricated rating.
+ */
+export function overallPublishedRating(): number | null {
+  return null
+}
+
 export const reviewExperienceFilters = [
   { value: 'all', label: 'All experiences' },
   { value: 'Hill country', label: 'Hill country' },
