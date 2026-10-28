@@ -10,39 +10,6 @@ export const homeHero = {
   ratingNote: '[Verified traveler rating copy]',
 } as const
 
-export const homeTrustItems = [
-  {
-    title: 'Experienced Local Drivers',
-    detail: 'SLTDA-licensed chauffeur-guides',
-    icon: 'badge',
-  },
-  {
-    title: 'Comfortable Vehicles',
-    detail: 'Private climate-controlled fleet',
-    icon: 'directions_car',
-  },
-  {
-    title: 'Custom Tour Packages',
-    detail: '100% tailor-made itineraries',
-    icon: 'map',
-  },
-  {
-    title: 'Best Price Guarantee',
-    detail: 'Direct-to-local transparent rates',
-    icon: 'payments',
-  },
-  {
-    title: '24/7 Customer Support',
-    detail: 'Concierge by WhatsApp',
-    icon: 'headset_mic',
-  },
-  {
-    title: 'Safe and Reliable Services',
-    detail: 'Inspected vehicles and trained drivers',
-    icon: 'verified_user',
-  },
-] as const
-
 export const homeTours = [
   {
     title: 'Royal Ceylon Heritage & Cultural Wonders',

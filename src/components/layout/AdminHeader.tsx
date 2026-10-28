@@ -8,9 +8,9 @@ export function AdminHeader({ title }: AdminHeaderProps) {
   const { user } = useAuth()
 
   return (
-    <header className="flex items-center justify-between border-b border-slate-200 bg-white px-6 py-4">
+    <header className="flex flex-col gap-1 border-b border-slate-200 bg-white px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
       <h1 className="text-lg font-semibold text-slate-900">{title}</h1>
-      <p className="text-sm text-slate-500">{user?.email ?? 'Admin'}</p>
+      <p className="max-w-full truncate text-sm text-slate-500">{user?.email ?? 'Admin'}</p>
     </header>
   )
 }

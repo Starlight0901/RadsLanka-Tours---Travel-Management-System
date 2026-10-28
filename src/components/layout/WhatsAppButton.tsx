@@ -8,7 +8,7 @@ export function WhatsAppButton() {
   const whatsappUrl = toWhatsAppUrl(siteConfig.whatsapp)
 
   const className =
-    'fixed bottom-24 right-5 z-40 inline-flex h-14 w-14 items-center justify-center rounded-full bg-whatsapp text-white shadow-lg transition hover:scale-105 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-whatsapp lg:bottom-5'
+    'fixed right-4 bottom-[calc(5.5rem+env(safe-area-inset-bottom))] z-40 inline-flex h-14 w-14 items-center justify-center rounded-full bg-whatsapp text-white shadow-lg transition hover:scale-105 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-whatsapp lg:right-5 lg:bottom-5'
 
   if (whatsappUrl) {
     return (

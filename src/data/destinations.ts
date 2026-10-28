@@ -115,12 +115,6 @@ export const mockDestinations: CatalogDestination[] = [
       { value: '1,500', label: 'Years Preserved', note: 'Continuous antiquity & hydraulic canals' },
       { value: '3', label: 'National Parks', note: 'Minneriya, Kaudulla & Eco-corridors' },
     ],
-    whyVisit: [
-      { title: 'Dawn 06:30 Priority Ascent', body: '[Detail from Figma]' },
-      { title: 'Private Certified Archaeologist', body: '[Detail from Figma]' },
-      { title: 'Base Camp Refreshment', body: '[Detail from Figma]' },
-      { title: 'Dedicated Executive Transport', body: '[Detail from Figma]' },
-    ],
     highlights: [
       {
         title: 'Dawn Ascent of Sigiriya Lion Rock',

@@ -1,4 +1,8 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
+import {
+  ItineraryLocationsEditor,
+  type ItineraryLocationDraft,
+} from '@/components/admin/ItineraryLocationsEditor.tsx'
 import { TourTagsManager } from '@/components/admin/TourTagsManager.tsx'
 import { FormError } from '@/components/forms/FormError.tsx'
 import { PageMeta } from '@/components/common/PageMeta.tsx'
@@ -8,16 +12,10 @@ import { EmptyState } from '@/components/ui/EmptyState.tsx'
 import { ErrorState } from '@/components/ui/ErrorState.tsx'
 import { LoadingState } from '@/components/ui/LoadingState.tsx'
 import { isCloudinaryConfigured, isFirebaseConfigured } from '@/config/env.ts'
-import { uploadImage } from '@/services/cloudinary/upload.ts'
-import { listAllAccommodations, type AccommodationRecord } from '@/services/firebase/accommodations.ts'
+import { uploadGalleryImage, uploadImage } from '@/services/cloudinary/upload.ts'
 import { listAllTags, type TagRecord } from '@/services/firebase/tags.ts'
-import {
-  createTravelStyle,
-  listAllTravelStyles,
-  normalizeTravelStyleName,
-  type TravelStyleRecord,
-} from '@/services/firebase/travelStyles.ts'
 import { listAllDestinations, type DestinationRecord } from '@/services/firebase/destinations.ts'
+import { listAllGalleryItems, type GalleryRecord } from '@/services/firebase/gallery.ts'
 import {
   createTour,
   deleteTour,
@@ -28,14 +26,23 @@ import {
   type TourRecord,
 } from '@/services/firebase/tours.ts'
 import type { MediaAsset, TourPricingBasis } from '@/types/models.ts'
-import { pricingBasisOptions, pricingPreview } from '@/utils/tourPricing.ts'
+import {
+  GALLERY_ASSOCIATION_LIMIT,
+  GALLERY_IMAGE_SIZE_MESSAGE,
+  embeddedTourGalleryImages,
+  galleryImageExceedsSizeLimit,
+  galleryImageKey,
+  galleryLimitMessage,
+  remainingGallerySlots,
+} from '@/utils/galleryLimits.ts'
+import { formatTourPrice, pricingBasisOptions, pricingPreview } from '@/utils/tourPricing.ts'
 import { slugify } from '@/utils/slugify.ts'
 
 type ItineraryDraft = {
   day: string
   title: string
   description: string
-  locations: string[]
+  locations: ItineraryLocationDraft[]
 }
 
 type ImageDraft = {
@@ -53,8 +60,6 @@ type TourFormState = {
   price: string
   pricingBasis: TourPricingBasis
   pricingCustomLabel: string
-  travelStyleId: string
-  legacyTravelStyle: string
   destinationIds: string[]
   accommodationIds: string[]
   tagIds: string[]
@@ -85,8 +90,6 @@ function emptyForm(): TourFormState {
     price: '',
     pricingBasis: 'per_person',
     pricingCustomLabel: '',
-    travelStyleId: '',
-    legacyTravelStyle: '',
     destinationIds: [],
     accommodationIds: [],
     tagIds: [],
@@ -113,8 +116,6 @@ function tourToForm(tour: TourRecord): TourFormState {
     price: String(tour.price),
     pricingBasis: tour.pricingBasis ?? 'per_person',
     pricingCustomLabel: tour.pricingCustomLabel ?? '',
-    travelStyleId: tour.travelStyleId ?? '',
-    legacyTravelStyle: tour.legacyTravelStyle ?? '',
     destinationIds: [...tour.destinations],
     accommodationIds: [...(tour.accommodationIds ?? [])],
     tagIds: [...(tour.tagIds ?? [])],
@@ -122,7 +123,10 @@ function tourToForm(tour: TourRecord): TourFormState {
       day: String(day.day),
       title: day.title,
       description: day.description,
-      locations: [...day.locations],
+      locations: day.locations.map((location) => ({
+        name: location.name,
+        destinationId: location.destinationId ?? '',
+      })),
     })),
     included: [...tour.included],
     excluded: [...tour.excluded],
@@ -175,7 +179,14 @@ function parseForm(form: TourFormState): { value: TourInput } | { errors: FieldE
   const itinerary = form.itinerary.flatMap((day) => {
     const dayTitle = day.title.trim()
     const dayDescription = day.description.trim()
-    const locations = day.locations.map((location) => location.trim()).filter(Boolean)
+    const locations = day.locations.flatMap((location) => {
+      const name = location.name.trim()
+      if (!name) {
+        return []
+      }
+      const destinationId = location.destinationId.trim()
+      return destinationId ? [{ name, destinationId }] : [{ name }]
+    })
     if (!dayTitle && !dayDescription && locations.length === 0) {
       return []
     }
@@ -227,7 +238,6 @@ function parseForm(form: TourFormState): { value: TourInput } | { errors: FieldE
       price,
       pricingBasis: form.pricingBasis,
       pricingCustomLabel: form.pricingCustomLabel,
-      travelStyleId: form.travelStyleId.trim(),
       destinations: form.destinationIds.map((id) => id.trim()).filter(Boolean),
       accommodationIds: form.accommodationIds.map((id) => id.trim()).filter(Boolean),
       tagIds: form.tagIds.map((id) => id.trim()).filter(Boolean),
@@ -240,10 +250,6 @@ function parseForm(form: TourFormState): { value: TourInput } | { errors: FieldE
       published: form.published,
     },
   }
-}
-
-function formatPrice(price: number): string {
-  return new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 }).format(price)
 }
 
 type StringListEditorProps = {
@@ -299,16 +305,12 @@ function StringListEditor({ id, label, items, addLabel, placeholder, onChange }:
 
 export function AdminToursPage() {
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const galleryFileInputRef = useRef<HTMLInputElement>(null)
   const [records, setRecords] = useState<TourRecord[]>([])
   const [destinations, setDestinations] = useState<DestinationRecord[]>([])
-  const [accommodations, setAccommodations] = useState<AccommodationRecord[]>([])
   const [tags, setTags] = useState<TagRecord[]>([])
+  const [galleryRecords, setGalleryRecords] = useState<GalleryRecord[]>([])
   const [tagsOpen, setTagsOpen] = useState(false)
-  const [travelStyles, setTravelStyles] = useState<TravelStyleRecord[]>([])
-  const [addingTravelStyle, setAddingTravelStyle] = useState(false)
-  const [newTravelStyleName, setNewTravelStyleName] = useState('')
-  const [travelStyleError, setTravelStyleError] = useState<string | null>(null)
-  const [savingTravelStyle, setSavingTravelStyle] = useState(false)
   const [loading, setLoading] = useState(isFirebaseConfigured)
   const [formLoading, setFormLoading] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -372,18 +374,6 @@ export function AdminToursPage() {
         }
       })
 
-    listAllAccommodations()
-      .then((next) => {
-        if (active) {
-          setAccommodations(next)
-        }
-      })
-      .catch((loadError: unknown) => {
-        if (active) {
-          setError(errorMessage(loadError, 'Unable to load accommodations.'))
-        }
-      })
-
     listAllTags()
       .then((next) => {
         if (active) {
@@ -396,15 +386,15 @@ export function AdminToursPage() {
         }
       })
 
-    listAllTravelStyles()
+    listAllGalleryItems()
       .then((next) => {
         if (active) {
-          setTravelStyles(next)
+          setGalleryRecords(next)
         }
       })
       .catch((loadError: unknown) => {
         if (active) {
-          setError(errorMessage(loadError, 'Unable to load travel styles.'))
+          setError(errorMessage(loadError, 'Unable to load gallery images.'))
         }
       })
 
@@ -413,53 +403,10 @@ export function AdminToursPage() {
     }
   }, [])
 
-  useEffect(() => {
-    setForm((current) => {
-      if (!current.legacyTravelStyle || current.travelStyleId) {
-        return current
-      }
-      const legacy = normalizeTravelStyleName(current.legacyTravelStyle)
-      const match = travelStyles.find((style) => normalizeTravelStyleName(style.name) === legacy)
-      if (!match) {
-        return current
-      }
-      return { ...current, travelStyleId: match.id }
-    })
-  }, [travelStyles])
-
-  function resetTravelStyleDraft() {
-    setAddingTravelStyle(false)
-    setNewTravelStyleName('')
-    setTravelStyleError(null)
-  }
-
-  async function saveNewTravelStyle() {
-    const name = newTravelStyleName.trim().replace(/\s+/g, ' ')
-    if (!name) {
-      setTravelStyleError('Enter a travel style name.')
-      return
-    }
-
-    setSavingTravelStyle(true)
-    setTravelStyleError(null)
-    try {
-      const id = await createTravelStyle({ name, slug: '' })
-      const next = await listAllTravelStyles()
-      setTravelStyles(next)
-      setForm((current) => ({ ...current, travelStyleId: id }))
-      resetTravelStyleDraft()
-    } catch (saveError) {
-      setTravelStyleError(errorMessage(saveError, 'Unable to save this travel style.'))
-    } finally {
-      setSavingTravelStyle(false)
-    }
-  }
-
   function openCreate() {
     setEditingId(null)
     setSlugManual(false)
     setFieldErrors({})
-    resetTravelStyleDraft()
     setForm(emptyForm())
     setFormOpen(true)
   }
@@ -471,7 +418,6 @@ export function AdminToursPage() {
     setFormOpen(true)
     setFormLoading(true)
     setError(null)
-    resetTravelStyleDraft()
 
     try {
       const tour = await getTour(id)
@@ -518,22 +464,6 @@ export function AdminToursPage() {
       return {
         ...current,
         tagIds: selected ? [...current.tagIds, id] : current.tagIds.filter((item) => item !== id),
-      }
-    })
-  }
-
-  function setAccommodationSelected(id: string, selected: boolean) {
-    setForm((current) => {
-      const alreadySelected = current.accommodationIds.includes(id)
-      if (selected === alreadySelected) {
-        return current
-      }
-
-      return {
-        ...current,
-        accommodationIds: selected
-          ? [...current.accommodationIds, id]
-          : current.accommodationIds.filter((item) => item !== id),
       }
     })
   }
@@ -595,9 +525,85 @@ export function AdminToursPage() {
     }))
   }
 
-  async function onImagesSelected(fileList: FileList | null) {
+  function associatedTourGalleryCount(images: ImageDraft[], tourId: string | null): number {
+    if (!tourId) {
+      return 0
+    }
+    const embeddedKeys = new Set(
+      embeddedTourGalleryImages(images)
+        .map((image) => galleryImageKey(image))
+        .filter(Boolean),
+    )
+    const seen = new Set<string>()
+    let count = 0
+    for (const item of galleryRecords) {
+      if (item.tourId !== tourId) {
+        continue
+      }
+      const key = galleryImageKey(item)
+      if (!key || embeddedKeys.has(key) || seen.has(key)) {
+        continue
+      }
+      seen.add(key)
+      count += 1
+    }
+    return count
+  }
+
+  async function onHeroSelected(fileList: FileList | null) {
+    const file = fileList?.[0]
+    if (!file || uploading) {
+      return
+    }
+
+    setUploading(true)
+    setError(null)
+    try {
+      const result = await uploadImage(file)
+      const uploaded: ImageDraft = {
+        imageUrl: result.secure_url,
+        publicId: result.public_id,
+        altText: '',
+        caption: '',
+      }
+      setForm((current) => ({
+        ...current,
+        images: current.images.length === 0 ? [uploaded] : [uploaded, ...current.images.slice(1)],
+      }))
+    } catch (uploadError) {
+      setError(errorMessage(uploadError, 'Image upload failed.'))
+    } finally {
+      setUploading(false)
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''
+      }
+    }
+  }
+
+  async function onGalleryImagesSelected(fileList: FileList | null) {
     const files = fileList ? Array.from(fileList) : []
     if (files.length === 0 || uploading) {
+      return
+    }
+
+    const associatedCount = associatedTourGalleryCount(form.images, editingId)
+    const used = embeddedTourGalleryImages(form.images).length + associatedCount
+    const remaining = remainingGallerySlots(used)
+    if (remaining <= 0) {
+      setError(galleryLimitMessage('tour'))
+      if (galleryFileInputRef.current) {
+        galleryFileInputRef.current.value = ''
+      }
+      return
+    }
+
+    const oversized = files.filter((file) => galleryImageExceedsSizeLimit(file))
+    const sizedOk = files.filter((file) => !galleryImageExceedsSizeLimit(file))
+    if (sizedOk.length === 0) {
+      setError(GALLERY_IMAGE_SIZE_MESSAGE)
+      if (galleryFileInputRef.current) {
+        galleryFileInputRef.current.value = ''
+      }
       return
     }
 
@@ -605,10 +611,11 @@ export function AdminToursPage() {
     setError(null)
     const uploaded: ImageDraft[] = []
     const failures: string[] = []
+    const selected = sizedOk.slice(0, remaining)
 
-    for (const file of files) {
+    for (const file of selected) {
       try {
-        const result = await uploadImage(file)
+        const result = await uploadGalleryImage(file)
         uploaded.push({
           imageUrl: result.secure_url,
           publicId: result.public_id,
@@ -623,13 +630,17 @@ export function AdminToursPage() {
     if (uploaded.length > 0) {
       setForm((current) => ({ ...current, images: [...current.images, ...uploaded] }))
     }
-    if (failures.length > 0) {
+    if (oversized.length > 0) {
+      setError(GALLERY_IMAGE_SIZE_MESSAGE)
+    } else if (sizedOk.length > remaining) {
+      setError(galleryLimitMessage('tour'))
+    } else if (failures.length > 0) {
       setError(failures[0] ?? 'Image upload failed.')
     }
 
     setUploading(false)
-    if (fileInputRef.current) {
-      fileInputRef.current.value = ''
+    if (galleryFileInputRef.current) {
+      galleryFileInputRef.current.value = ''
     }
   }
 
@@ -694,10 +705,12 @@ export function AdminToursPage() {
   const missingDestinationIds = form.destinationIds.filter(
     (id) => !destinations.some((destination) => destination.id === id),
   )
-  const missingAccommodationIds = form.accommodationIds.filter(
-    (id) => !accommodations.some((accommodation) => accommodation.id === id),
-  )
   const missingTagIds = form.tagIds.filter((id) => !tags.some((tag) => tag.id === id))
+  const heroImage = form.images[0]
+  const galleryImages = embeddedTourGalleryImages(form.images)
+  const associatedGalleryCount = associatedTourGalleryCount(form.images, editingId)
+  const galleryUsed = galleryImages.length + associatedGalleryCount
+  const galleryAtLimit = galleryUsed >= GALLERY_ASSOCIATION_LIMIT
 
   return (
     <>
@@ -805,17 +818,26 @@ export function AdminToursPage() {
                 </div>
                 <div>
                   <label htmlFor="tour-price" className="mb-1.5 block text-sm font-medium text-slate-700">
-                    Price
+                    Price (USD)
                   </label>
-                  <input
-                    id="tour-price"
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={form.price}
-                    className={controlClassName}
-                    onChange={(event) => setForm((current) => ({ ...current, price: event.target.value }))}
-                  />
+                  <div className="relative">
+                    <span
+                      aria-hidden="true"
+                      className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-sm text-slate-500"
+                    >
+                      $
+                    </span>
+                    <input
+                      id="tour-price"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      inputMode="decimal"
+                      value={form.price}
+                      className="w-full rounded-lg border border-slate-300 py-2 pr-3 pl-7 text-sm outline-none ring-slate-900 focus:ring-2"
+                      onChange={(event) => setForm((current) => ({ ...current, price: event.target.value }))}
+                    />
+                  </div>
                   <FormError message={fieldErrors.price} />
                 </div>
                 <div>
@@ -865,77 +887,6 @@ export function AdminToursPage() {
                 </p>
               ) : null}
 
-              <div className="mt-4">
-                <div className="mb-1.5 flex items-center justify-between gap-3">
-                  <label htmlFor="tour-travel-style" className="block text-sm font-medium text-slate-700">
-                    Travel Style
-                  </label>
-                  {addingTravelStyle ? null : (
-                    <button
-                      type="button"
-                      className="text-sm font-medium text-slate-900 underline"
-                      onClick={() => {
-                        setAddingTravelStyle(true)
-                        setTravelStyleError(null)
-                      }}
-                    >
-                      + Add new travel style
-                    </button>
-                  )}
-                </div>
-                <select
-                  id="tour-travel-style"
-                  value={form.travelStyleId}
-                  className={controlClassName}
-                  onChange={(event) => setForm((current) => ({ ...current, travelStyleId: event.target.value }))}
-                >
-                  <option value="">Select travel style</option>
-                  {travelStyles.map((style) => (
-                    <option key={style.id} value={style.id}>
-                      {style.name}
-                    </option>
-                  ))}
-                  {form.travelStyleId && !travelStyles.some((style) => style.id === form.travelStyleId) ? (
-                    <option value={form.travelStyleId}>Saved travel style ({form.travelStyleId})</option>
-                  ) : null}
-                </select>
-                {!form.travelStyleId && form.legacyTravelStyle ? (
-                  <p className="mt-2 text-sm text-slate-600">
-                    This tour was saved as “{form.legacyTravelStyle}”. Select that style, or add it if it is not in the
-                    list.
-                  </p>
-                ) : null}
-                {addingTravelStyle ? (
-                  <div className="mt-3 rounded-lg border border-slate-200 p-3">
-                    <p className="text-sm font-medium text-slate-900">New travel style</p>
-                    <label htmlFor="new-travel-style" className="mt-3 mb-1.5 block text-sm font-medium text-slate-700">
-                      Travel style name
-                    </label>
-                    <input
-                      id="new-travel-style"
-                      type="text"
-                      value={newTravelStyleName}
-                      className={controlClassName}
-                      onChange={(event) => setNewTravelStyleName(event.target.value)}
-                    />
-                    <FormError message={travelStyleError ?? undefined} />
-                    <div className="mt-3 flex gap-2">
-                      <Button
-                        type="button"
-                        className="rounded-lg"
-                        disabled={savingTravelStyle}
-                        onClick={() => void saveNewTravelStyle()}
-                      >
-                        {savingTravelStyle ? 'Saving…' : 'Save'}
-                      </Button>
-                      <Button type="button" variant="secondary" className="rounded-lg" onClick={resetTravelStyleDraft}>
-                        Cancel
-                      </Button>
-                    </div>
-                  </div>
-                ) : null}
-              </div>
-
               <div className="mt-5 border-t border-slate-200 pt-5">
                 <h3 className="text-sm font-semibold text-slate-900">Destinations</h3>
                 <p className="mt-1 text-sm text-slate-600">
@@ -968,44 +919,6 @@ export function AdminToursPage() {
                         onChange={(event) => setDestinationSelected(id, event.target.checked)}
                       />
                       Saved destination ({id})
-                    </label>
-                  ))}
-                </div>
-              </div>
-
-              <div className="mt-5 border-t border-slate-200 pt-5">
-                <h3 className="text-sm font-semibold text-slate-900">Accommodation</h3>
-                <p className="mt-1 text-sm text-slate-600">
-                  Select the accommodations that apply to this tour. They are saved as IDs.
-                  {form.accommodationIds.length > 0
-                    ? ` ${form.accommodationIds.length} selected.`
-                    : ' None selected.'}
-                </p>
-                <div className="mt-3 max-h-48 space-y-2 overflow-auto rounded-lg border border-slate-200 p-3">
-                  {accommodations.length === 0 && missingAccommodationIds.length === 0 ? (
-                    <p className="text-sm text-slate-500">No accommodations yet. Add them on the Accommodations page.</p>
-                  ) : null}
-                  {accommodations.map((accommodation) => (
-                    <label key={accommodation.id} className="flex items-center gap-2 text-sm text-slate-700">
-                      <input
-                        type="checkbox"
-                        className="h-4 w-4 accent-slate-900"
-                        checked={form.accommodationIds.includes(accommodation.id)}
-                        onChange={(event) => setAccommodationSelected(accommodation.id, event.target.checked)}
-                      />
-                      {accommodation.name.trim() || 'Untitled accommodation'}
-                      {accommodation.published ? '' : ' (unpublished)'}
-                    </label>
-                  ))}
-                  {missingAccommodationIds.map((id) => (
-                    <label key={id} className="flex items-center gap-2 text-sm text-slate-700">
-                      <input
-                        type="checkbox"
-                        className="h-4 w-4 accent-slate-900"
-                        checked
-                        onChange={(event) => setAccommodationSelected(id, event.target.checked)}
-                      />
-                      Saved accommodation ({id})
                     </label>
                   ))}
                 </div>
@@ -1129,12 +1042,10 @@ export function AdminToursPage() {
                         />
                       </div>
                       <div className="mt-4">
-                        <StringListEditor
+                        <ItineraryLocationsEditor
                           id={`itinerary-locations-${index}`}
-                          label="Locations"
-                          items={day.locations}
-                          addLabel="Add location"
-                          placeholder="Colombo"
+                          locations={day.locations}
+                          destinations={destinations}
                           onChange={(locations) => updateDay(index, { locations })}
                         />
                       </div>
@@ -1167,72 +1078,60 @@ export function AdminToursPage() {
               </div>
 
               <div className="mt-5 border-t border-slate-200 pt-5">
-                <h3 className="text-sm font-semibold text-slate-900">Images</h3>
+                <h3 className="text-sm font-semibold text-slate-900">Hero image</h3>
                 <p className="mt-1 text-sm text-slate-600">
-                  Images upload to Cloudinary. They are stored on the tour when you save.
+                  The first tour image is the public hero. Existing uploaded images are kept and also appear in the
+                  gallery when they are not the hero.
                 </p>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  disabled={uploading || saving}
-                  className="mt-3 block w-full text-sm text-slate-600"
-                  onChange={(event) => void onImagesSelected(event.target.files)}
-                />
-                {uploading ? <p className="mt-2 text-sm text-slate-500">Uploading images…</p> : null}
-                {!isCloudinaryConfigured ? (
-                  <p className="mt-2 text-sm text-slate-500">
-                    Add Cloudinary settings before uploading images.
-                  </p>
-                ) : null}
-                <ul className="mt-4 space-y-4">
-                  {form.images.map((image, index) => (
-                    <li key={`${image.publicId}-${index}`} className="rounded-lg border border-slate-200 p-4">
-                      <div className="flex gap-4">
-                        <img
-                          src={image.imageUrl}
-                          alt={image.altText || 'Uploaded tour image'}
-                          className="h-24 w-24 shrink-0 rounded-lg object-cover"
-                        />
-                        <div className="min-w-0 flex-1 space-y-3">
-                          <div>
-                            <label
-                              htmlFor={`tour-image-alt-${index}`}
-                              className="mb-1.5 block text-sm font-medium text-slate-700"
-                            >
-                              Alt text
-                            </label>
-                            <input
-                              id={`tour-image-alt-${index}`}
-                              type="text"
-                              value={image.altText}
-                              className={controlClassName}
-                              onChange={(event) => updateImage(index, { altText: event.target.value })}
-                            />
-                          </div>
-                          <div>
-                            <label
-                              htmlFor={`tour-image-caption-${index}`}
-                              className="mb-1.5 block text-sm font-medium text-slate-700"
-                            >
-                              Caption
-                            </label>
-                            <input
-                              id={`tour-image-caption-${index}`}
-                              type="text"
-                              value={image.caption}
-                              className={controlClassName}
-                              onChange={(event) => updateImage(index, { caption: event.target.value })}
-                            />
-                          </div>
+                {heroImage ? (
+                  <div className="mt-4 rounded-lg border border-slate-200 p-4">
+                    <div className="flex gap-4">
+                      <img
+                        src={heroImage.imageUrl}
+                        alt={heroImage.altText || 'Tour hero image'}
+                        className="h-24 w-24 shrink-0 rounded-lg object-cover"
+                      />
+                      <div className="min-w-0 flex-1 space-y-3">
+                        <div>
+                          <label htmlFor="tour-hero-alt" className="mb-1.5 block text-sm font-medium text-slate-700">
+                            Alt text
+                          </label>
+                          <input
+                            id="tour-hero-alt"
+                            type="text"
+                            value={heroImage.altText}
+                            className={controlClassName}
+                            onChange={(event) => updateImage(0, { altText: event.target.value })}
+                          />
+                        </div>
+                        <div>
+                          <label htmlFor="tour-hero-caption" className="mb-1.5 block text-sm font-medium text-slate-700">
+                            Caption
+                          </label>
+                          <input
+                            id="tour-hero-caption"
+                            type="text"
+                            value={heroImage.caption}
+                            className={controlClassName}
+                            onChange={(event) => updateImage(0, { caption: event.target.value })}
+                          />
+                        </div>
+                        <div className="flex flex-wrap gap-3">
+                          <button
+                            type="button"
+                            className="text-sm font-medium text-slate-900 underline"
+                            disabled={uploading || saving}
+                            onClick={() => fileInputRef.current?.click()}
+                          >
+                            Replace image
+                          </button>
                           <button
                             type="button"
                             className="text-sm font-medium text-red-700 underline"
                             onClick={() =>
                               setForm((current) => ({
                                 ...current,
-                                images: current.images.filter((_, imageIndex) => imageIndex !== index),
+                                images: current.images.filter((_, imageIndex) => imageIndex !== 0),
                               }))
                             }
                           >
@@ -1240,9 +1139,116 @@ export function AdminToursPage() {
                           </button>
                         </div>
                       </div>
-                    </li>
-                  ))}
+                    </div>
+                  </div>
+                ) : (
+                  <p className="mt-2 text-sm text-slate-500">Upload a landscape photograph for the tour hero.</p>
+                )}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  disabled={uploading || saving || !isCloudinaryConfigured}
+                  className={heroImage ? 'sr-only' : 'mt-3 block w-full text-sm text-slate-600'}
+                  onChange={(event) => void onHeroSelected(event.target.files)}
+                />
+              </div>
+
+              <div className="mt-5 border-t border-slate-200 pt-5">
+                <h3 className="text-sm font-semibold text-slate-900">Gallery images</h3>
+                <p className="mt-1 text-sm text-slate-600">
+                  Up to two additional images appear in the public tour gallery and the central Gallery page.
+                </p>
+                <ul className="mt-4 space-y-4">
+                  {galleryImages.map((image, galleryIndex) => {
+                    const index = galleryIndex + 1
+                    return (
+                      <li key={`${image.publicId}-${index}`} className="rounded-lg border border-slate-200 p-4">
+                        <div className="flex gap-4">
+                          <img
+                            src={image.imageUrl}
+                            alt={image.altText || 'Tour gallery image'}
+                            className="h-24 w-24 shrink-0 rounded-lg object-cover"
+                          />
+                          <div className="min-w-0 flex-1 space-y-3">
+                            <p className="text-sm font-semibold text-slate-900">Gallery image {galleryIndex + 1}</p>
+                            <div>
+                              <label
+                                htmlFor={`tour-image-alt-${index}`}
+                                className="mb-1.5 block text-sm font-medium text-slate-700"
+                              >
+                                Alt text
+                              </label>
+                              <input
+                                id={`tour-image-alt-${index}`}
+                                type="text"
+                                value={image.altText}
+                                className={controlClassName}
+                                onChange={(event) => updateImage(index, { altText: event.target.value })}
+                              />
+                            </div>
+                            <div>
+                              <label
+                                htmlFor={`tour-image-caption-${index}`}
+                                className="mb-1.5 block text-sm font-medium text-slate-700"
+                              >
+                                Caption
+                              </label>
+                              <input
+                                id={`tour-image-caption-${index}`}
+                                type="text"
+                                value={image.caption}
+                                className={controlClassName}
+                                onChange={(event) => updateImage(index, { caption: event.target.value })}
+                              />
+                            </div>
+                            <button
+                              type="button"
+                              className="text-sm font-medium text-red-700 underline"
+                              onClick={() =>
+                                setForm((current) => ({
+                                  ...current,
+                                  images: current.images.filter((_, imageIndex) => imageIndex !== index),
+                                }))
+                              }
+                            >
+                              Remove image
+                            </button>
+                          </div>
+                        </div>
+                      </li>
+                    )
+                  })}
                 </ul>
+                <input
+                  ref={galleryFileInputRef}
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  disabled={uploading || saving || galleryAtLimit || !heroImage || !isCloudinaryConfigured}
+                  className="mt-3 block w-full text-sm text-slate-600"
+                  onChange={(event) => void onGalleryImagesSelected(event.target.files)}
+                />
+                {uploading ? <p className="mt-2 text-sm text-slate-500">Uploading images…</p> : null}
+                {!heroImage ? (
+                  <p className="mt-2 text-sm text-slate-500">Add a hero image before uploading gallery images.</p>
+                ) : associatedGalleryCount > 0 ? (
+                  <p className="mt-2 text-sm text-slate-500">
+                    {associatedGalleryCount} image{associatedGalleryCount === 1 ? '' : 's'} already linked on the
+                    Gallery page
+                    {galleryAtLimit
+                      ? `. ${galleryLimitMessage('tour')}`
+                      : `. You can add ${remainingGallerySlots(galleryUsed)} more here.`}
+                  </p>
+                ) : galleryAtLimit ? (
+                  <p className="mt-2 text-sm text-slate-500">{galleryLimitMessage('tour')}</p>
+                ) : !isCloudinaryConfigured ? (
+                  <p className="mt-2 text-sm text-slate-500">Add Cloudinary settings before uploading images.</p>
+                ) : (
+                  <p className="mt-2 text-sm text-slate-500">
+                    Up to {GALLERY_ASSOCIATION_LIMIT} gallery images per tour.
+                  </p>
+                )}
                 <FormError message={fieldErrors.images} />
               </div>
 
@@ -1321,7 +1327,7 @@ export function AdminToursPage() {
                   <tr key={record.id} className="border-b border-slate-100 last:border-0">
                     <td className="px-4 py-3 font-medium text-slate-900">{record.title}</td>
                     <td className="px-4 py-3 text-slate-500">{record.duration}</td>
-                    <td className="px-4 py-3">{formatPrice(record.price)}</td>
+                    <td className="px-4 py-3 whitespace-nowrap">{formatTourPrice(record.price)}</td>
                     <td className="px-4 py-3">{record.published ? 'Yes' : 'No'}</td>
                     <td className="px-4 py-3">{record.popular ? 'Yes' : 'No'}</td>
                     <td className="px-4 py-3">{record.featured ? 'Yes' : 'No'}</td>

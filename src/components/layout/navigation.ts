@@ -4,7 +4,6 @@ export const publicNavItems = [
   { to: paths.home, label: 'Home', end: true },
   { to: paths.tours, label: 'Tours', end: false },
   { to: paths.destinations, label: 'Destinations', end: false },
-  { to: paths.vehicles, label: 'Vehicles', end: false },
   { to: paths.about, label: 'About Us', end: false },
   { to: paths.gallery, label: 'Gallery', end: false },
   { to: paths.reviews, label: 'Reviews', end: false },

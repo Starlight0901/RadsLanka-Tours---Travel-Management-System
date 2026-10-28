@@ -11,8 +11,8 @@ type MobileHeaderProps = {
 export function MobileHeader({ menuOpen, onToggleMenu }: MobileHeaderProps) {
   return (
     <div className="flex h-16 items-center justify-between gap-3 px-5 lg:hidden">
-      <SiteLogo onClick={() => menuOpen && onToggleMenu()} />
-      <div className="flex items-center gap-2">
+      <SiteLogo className="min-w-0 shrink" imgClassName="max-w-full" onClick={() => menuOpen && onToggleMenu()} />
+      <div className="flex shrink-0 items-center gap-2">
         <NavLink
           to={paths.inquiry}
           className="inline-flex min-h-9 items-center gap-1 rounded-control bg-brand px-3.5 py-2 text-[13px] font-semibold tracking-[0.02em] text-on-brand"

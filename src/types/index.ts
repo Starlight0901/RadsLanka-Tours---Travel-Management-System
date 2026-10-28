@@ -1,9 +1,13 @@
 export type {
   CatalogDestination,
+  CatalogDestinationExperience,
+  DestinationEssenceTheme,
   DestinationExperience,
   DestinationFact,
+  DestinationGlance,
   DestinationImage,
   DestinationInfoItem,
+  DestinationKeyHighlight,
   DestinationPlace,
   DestinationSeason,
   DestinationStat,
@@ -20,7 +24,7 @@ export type {
 } from '@/types/tours.ts'
 
 export type { CatalogVehicle, VehicleImage, VehicleSpec } from '@/types/vehicles.ts'
-export type { CatalogGalleryItem, GalleryCategory } from '@/types/gallery.ts'
+export type { CatalogGalleryItem, CatalogGalleryLink, GalleryCategory } from '@/types/gallery.ts'
 
 export {
   FIRESTORE_COLLECTIONS,
@@ -28,9 +32,17 @@ export {
   type AdminProfile,
   type AdminRole,
   type CollectionName,
+  type AudienceCategory,
   type Destination,
+  type DestinationExperienceItem,
+  type DestinationGlanceDetails,
+  type DestinationHighlightItem,
+  type DestinationMonthRange,
+  type DestinationStay,
   type FirestoreTimestamp,
   type GalleryItem,
+  type HeroBenefit,
+  type HeroBenefitsSettings,
   type HeroTextBlock,
   type HeroTextStyle,
   type HomepageHeroContent,
@@ -41,9 +53,14 @@ export {
   type Review,
   type SiteSettings,
   type Tour,
+  type TourItineraryLocation,
   type TourPricingBasis,
   type TourTag,
-  type TravelStyle,
   type WhyTravelerItem,
   type Vehicle,
+  type AboutApproach,
+  type AboutDistinctionFact,
+  type AboutPageSettings,
+  type AboutTeamMember,
+  type ContactFaq,
 } from '@/types/models.ts'

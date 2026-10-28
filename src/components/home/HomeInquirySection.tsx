@@ -16,7 +16,7 @@ export function HomeInquirySection() {
         aria-hidden="true"
       />
       <Container className="relative py-16 lg:py-32">
-        <div className="rounded-2xl bg-surface-elevated p-8 shadow-[0_24px_60px_-12px_rgba(1,45,29,0.35)] lg:p-12">
+        <div className="rounded-2xl bg-surface-elevated p-5 shadow-[0_24px_60px_-12px_rgba(1,45,29,0.35)] sm:p-8 lg:p-12">
           <div className="grid gap-10 lg:grid-cols-[minmax(0,0.45fr)_minmax(0,0.55fr)] lg:gap-12 lg:items-center">
             <div>
               <p className="text-[11px] font-bold uppercase tracking-[0.1em] text-eyebrow">{homeInquiry.eyebrow}</p>

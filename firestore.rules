@@ -18,6 +18,8 @@ rules_version = '2';
 //   accommodationIds, tagIds, itinerary, included, excluded, images, featured, popular, published,
 //   pricingBasis ("per_person" | "for_2" | "for_4" | "custom"), pricingCustomLabel,
 //   createdAt, updatedAt
+// itinerary[].locations items are { name: string, destinationId?: string }.
+// Legacy itinerary locations stored as string[] are still read by the client.
 // Public read requires published == true.
 //
 // Collection: travelStyles
@@ -39,11 +41,32 @@ rules_version = '2';
 // Fields: title, description, icon, published, order, createdAt, updatedAt
 // Public read requires published == true. Writes are admin-only.
 //
+// Collection: contactFaqs
+// Fields: question, answer, published, order, createdAt, updatedAt
+// Public read requires published == true. Writes are admin-only.
+//
+// Collection: heroBenefits
+// Fields: title, description, icon (approved identifier), order, published,
+//   createdAt, updatedAt
+// Public read requires published == true. Writes are admin-only.
+// The six-item limit is enforced by the admin service.
+//
 // Collection: destinations
-// Fields: name, slug, description, coverImage, thingsToDo, placesToVisit,
-//   bestTime, travelInfo, gallery, relatedTours, published,
-//   availableForInquiry, createdAt, updatedAt
+// Fields: name, slug, subtitle, description, coverImage (hero image),
+//   glance { bestTimeMonths { startMonth, endMonth }, province, district,
+//   recommendedStay { unit, value }, characteristics, characteristicOther,
+//   idealFor }, essenceThemes, overviewTitle, overviewDescription (Markdown),
+//   keyHighlights [{ id, title, detail, icon, published }],
+//   experiences [{ id, title, description, image, published }], thingsToDo,
+//   placesToVisit, bestTime, travelInfo, gallery, relatedTours, featured,
+//   popular, published, availableForInquiry, createdAt, updatedAt
+// Missing featured, popular, and published are treated as false by the client.
 // Public read requires published == true.
+//
+// Collection: audienceCategories
+// Document ID: URI-encoded, lower-cased "Ideal for" label
+// Fields: name, createdAt
+// Admin-only. Destinations store the selected labels, so public pages never read this.
 //
 // Collection: vehicles
 // Fields: name, type, description, passengerCapacity, luggageCapacity,
@@ -59,20 +82,39 @@ rules_version = '2';
 // Approved documents include traveler email. Rules cannot hide one field.
 //
 // Collection: gallery
-// Fields: imageUrl, publicId, category, caption, altText, published, createdAt
-// Public read requires published == true.
+// Fields: imageUrl, publicId, title, optional tourId, optional destinationId,
+//   caption, altText, published, createdAt, updatedAt
+// Older documents may have category and omit title, tourId, destinationId, or updatedAt.
+// Title falls back to caption or altText. Public read requires published == true.
+// Tour gallery extras also live on tours.images after the hero image.
+// Destination gallery images live on destinations.gallery. Each tour or destination
+// may have at most two associated gallery images across both stores.
 //
 // Collection: inquiries
 // Fields: type ("package_tour" | "custom_tour" | "general"), name, email,
-//   phone, optional travel fields, message, status
+//   phone, optional travelDate, returnDate, estimatedTravelDays (inclusive
+//   calendar days), optional travel fields, message, status
 //   ("New" | "Contacted" | "Follow-up" | "Converted" | "Closed"),
 //   createdAt, updatedAt
 // Public create requires status == "New". No public read, update, or delete.
+// Older documents may omit estimatedTravelDays.
 //
 // Collection: siteSettings
 // Singleton website settings: logo, phone, whatsapp, email, address,
 //   socialLinks, heroText, footer
-// Public read is intentional. Writes are admin-only.
+// Document siteSettings/heroBenefits: mobileAutoScrollSpeed (1-10), initialized,
+//   updatedAt
+// Document siteSettings/about: About Us page settings (hero, distinction, origins,
+//   journeyBaseline, distinctionFacts, approachesInitialized)
+// Subcollection siteSettings/about/teamMembers: name, image, designation,
+//   description, order, published, createdAt, updatedAt
+//   Public read requires published == true. Writes are admin-only.
+// Subcollection siteSettings/about/approaches: title, description, order, deleted,
+//   createdAt, updatedAt
+//   Public read requires deleted == false. Writes are admin-only.
+//   Approaches are soft-deleted; documents are never permanently removed by the CMS.
+// Why Travelers content stays in whyTravelerItems and is not duplicated here.
+// Public read of siteSettings documents is intentional. Writes are admin-only.
 //
 // Admin CMS writes are authorized by role and are not field-validated here.
 // Anonymous creates are limited to the known fields and the status rules above.
@@ -138,6 +180,7 @@ service cloud.firestore {
           'phone',
           'travelDate',
           'returnDate',
+          'estimatedTravelDays',
           'travellers',
           'adults',
           'children',
@@ -178,6 +221,7 @@ service cloud.firestore {
         && data.updatedAt == request.time
         && optionalBoundedString(data, 'travelDate', 40)
         && optionalBoundedString(data, 'returnDate', 40)
+        && optionalIntInRange(data, 'estimatedTravelDays', 1, 400)
         && optionalBoundedString(data, 'country', 100)
         && optionalBoundedString(data, 'tourId', 128)
         && optionalBoundedString(data, 'otherDestination', 200)
@@ -259,12 +303,26 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    match /audienceCategories/{categoryId} {
+      allow read, write: if isAdmin();
+    }
+
     match /accommodations/{accommodationId} {
       allow read: if isAdmin() || isPublished();
       allow write: if isAdmin();
     }
 
     match /whyTravelerItems/{itemId} {
+      allow read: if isAdmin() || isPublished();
+      allow write: if isAdmin();
+    }
+
+    match /contactFaqs/{faqId} {
+      allow read: if isAdmin() || isPublished();
+      allow write: if isAdmin();
+    }
+
+    match /heroBenefits/{benefitId} {
       allow read: if isAdmin() || isPublished();
       allow write: if isAdmin();
     }
@@ -303,6 +361,16 @@ service cloud.firestore {
     match /siteSettings/{documentId} {
       allow read: if true;
       allow write: if isAdmin();
+
+      match /teamMembers/{memberId} {
+        allow read: if isAdmin() || isPublished();
+        allow write: if isAdmin();
+      }
+
+      match /approaches/{approachId} {
+        allow read: if isAdmin() || resource.data.deleted == false;
+        allow write: if isAdmin();
+      }
     }
   }
 }

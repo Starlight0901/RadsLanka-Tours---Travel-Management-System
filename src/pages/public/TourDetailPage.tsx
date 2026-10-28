@@ -19,6 +19,7 @@ import { LoadingState } from '@/components/ui/LoadingState.tsx'
 import { SectionHeading } from '@/components/ui/SectionHeading.tsx'
 import { getPublishedReviewsForTour, getRelatedTours } from '@/data/tourCatalog.ts'
 import { NotFoundPage } from '@/pages/public/NotFoundPage.tsx'
+import { associatedTourGalleryImages, listPublishedGalleryItems } from '@/services/firebase/gallery.ts'
 import { toCatalogTours } from '@/services/firebase/tourAdapter.ts'
 import { getPublishedTourBySlug } from '@/services/firebase/tours.ts'
 import type { CatalogTour } from '@/types/tours.ts'
@@ -27,19 +28,49 @@ import { absoluteAssetUrl, buildTourShareUrl } from '@/utils/shareJourney.ts'
 import { toWhatsAppUrl } from '@/utils/whatsapp.ts'
 import { siteConfig } from '@/config/site.ts'
 
-function formatDetailPrice(priceLabel: string): string {
-  if (/^LKR\b/i.test(priceLabel)) {
-    return priceLabel
-  }
+const destinationNamesOf = (tour: CatalogTour): string[] => tour.destinationNames?.filter(Boolean) ?? []
 
-  return `LKR ${priceLabel}`
+function displayCaption(
+  image: { alt: string; caption?: string },
+  fallbackLabel?: string,
+): string | undefined {
+  const caption = image.caption?.trim()
+  if (caption) {
+    return caption
+  }
+  const alt = image.alt.trim()
+  if (alt && alt !== fallbackLabel) {
+    return alt
+  }
+  return undefined
 }
 
-const destinationNamesOf = (tour: CatalogTour): string[] => tour.destinationNames?.filter(Boolean) ?? []
+function mergeGalleryImages(
+  extras: Array<{ src?: string; alt: string; caption?: string }>,
+  associated: Array<{ src: string; alt: string; caption?: string }>,
+): Array<{ src?: string; alt: string; caption?: string }> {
+  const images = new Map<string, { src?: string; alt: string; caption?: string }>()
+  for (const image of [...extras, ...associated]) {
+    const key = image.src?.trim()
+    if (!key) {
+      continue
+    }
+    const existing = images.get(key)
+    if (!existing) {
+      images.set(key, image)
+      continue
+    }
+    if (!existing.caption && image.caption) {
+      images.set(key, { ...existing, caption: image.caption })
+    }
+  }
+  return [...images.values()]
+}
 
 export function TourDetailPage() {
   const { slug } = useParams()
   const [tour, setTour] = useState<CatalogTour | null>(null)
+  const [associatedGallery, setAssociatedGallery] = useState<Array<{ src: string; alt: string; caption?: string }>>([])
   const [status, setStatus] = useState<'loading' | 'ready' | 'missing' | 'error'>('loading')
 
   useEffect(() => {
@@ -47,18 +78,20 @@ export function TourDetailPage() {
 
     if (!slug) {
       setTour(null)
+      setAssociatedGallery([])
       setStatus('missing')
       return
     }
 
     setStatus('loading')
-    getPublishedTourBySlug(slug)
-      .then(async (record) => {
+    Promise.all([getPublishedTourBySlug(slug), listPublishedGalleryItems().catch(() => [])])
+      .then(async ([record, galleryItems]) => {
         if (!active) {
           return
         }
         if (!record) {
           setTour(null)
+          setAssociatedGallery([])
           setStatus('missing')
           return
         }
@@ -68,11 +101,13 @@ export function TourDetailPage() {
           return
         }
         setTour(next ?? null)
+        setAssociatedGallery(associatedTourGalleryImages(record.id, galleryItems))
         setStatus(next ? 'ready' : 'missing')
       })
       .catch(() => {
         if (active) {
           setTour(null)
+          setAssociatedGallery([])
           setStatus('error')
         }
       })
@@ -105,7 +140,13 @@ export function TourDetailPage() {
   const reviews = getPublishedReviewsForTour(tour.id)
   const related = getRelatedTours(tour)
   const hero = tour.images[0]
-  const gallery = tour.images.slice(1)
+  const gallery = mergeGalleryImages(
+    tour.images.slice(1).map((image) => ({
+      ...image,
+      caption: displayCaption(image, tour.title),
+    })),
+    associatedGallery,
+  ).filter((image) => Boolean(image.src))
   const whatsappHref = toWhatsAppUrl(siteConfig.whatsapp)
   const destinationNames = destinationNamesOf(tour)
   const shareUrl = buildTourShareUrl(tour.slug)
@@ -156,7 +197,7 @@ export function TourDetailPage() {
               <PlaceholderMedia label={hero?.alt ?? tour.title} className="absolute inset-0" />
             )}
             <div className="absolute inset-0 bg-gradient-to-t from-brand via-brand/55 to-brand/20" />
-            <div className="relative z-10 flex min-h-[28rem] flex-col justify-end p-6 lg:min-h-[37.5rem] lg:p-14">
+            <div className="relative z-10 flex min-h-[28rem] flex-col justify-end px-5 pt-16 pb-6 sm:px-6 lg:min-h-[37.5rem] lg:px-14 lg:pt-24 lg:pb-14">
               <div className="absolute top-5 right-5 z-20 flex gap-2 lg:top-10 lg:right-10">
                 <ShareJourneyButton title={tour.title} description={tour.shortDescription} url={shareUrl} />
               </div>
@@ -180,19 +221,11 @@ export function TourDetailPage() {
                   <dt className="text-[11px] font-bold tracking-[0.55px] text-on-brand-dim uppercase">Duration</dt>
                   <dd className="mt-1 text-lg font-bold">{tour.duration}</dd>
                 </div>
-                {tour.travelStyle ? (
-                  <div>
-                    <dt className="text-[11px] font-bold tracking-[0.55px] text-on-brand-dim uppercase">
-                      Travel Style
-                    </dt>
-                    <dd className="mt-1 text-lg font-bold">{tour.travelStyle}</dd>
-                  </div>
-                ) : null}
                 {tour.priceLabel ? (
                   <div>
                     <dt className="text-[11px] font-bold tracking-[0.55px] text-on-brand-dim uppercase">From</dt>
                     <dd className="mt-1 text-lg font-bold">
-                      {formatDetailPrice(tour.priceLabel)}
+                      {tour.priceLabel}
                       {tour.priceNote ? (
                         <span className="mt-0.5 block text-sm font-semibold text-on-brand-soft">{tour.priceNote}</span>
                       ) : null}
@@ -200,15 +233,15 @@ export function TourDetailPage() {
                   </div>
                 ) : null}
               </dl>
-              <div className="mt-8 flex flex-wrap gap-3">
-                <ButtonLink to="#booking" variant="primary" className="lift-button">
+              <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+                <ButtonLink to="#booking" variant="primary" className="lift-button w-full sm:w-auto">
                   Request This Journey
                   <Icon name="arrow_forward" className="text-[12px]" />
                 </ButtonLink>
                 {whatsappHref ? (
                   <a
                     href={whatsappHref}
-                    className="inline-flex min-h-12 items-center justify-center gap-2 rounded-control border border-white/20 bg-white/10 px-6 text-sm font-semibold"
+                    className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-control border border-white/20 bg-white/10 px-6 text-center text-sm font-semibold sm:w-auto"
                   >
                     <Icon name="chat" className="text-[16px]" />
                     Talk to Us on WhatsApp
@@ -298,12 +331,12 @@ export function TourDetailPage() {
           </div>
         </div>
 
-        {tour.images.length > 0 ? (
+        {gallery.length > 0 ? (
           <section className="mt-16">
             <p className="text-[11px] font-bold tracking-[0.1em] text-eyebrow uppercase">Gallery</p>
             <h2 className="mt-1 font-display text-[2rem] font-semibold text-brand">Glimpses of Your Journey</h2>
             <div className="mt-6">
-              <ImageGallery items={gallery.length > 0 ? gallery : tour.images} />
+              <ImageGallery items={gallery} />
             </div>
           </section>
         ) : null}
@@ -339,7 +372,7 @@ export function TourDetailPage() {
               />
             </div>
           ) : (
-            <ul className="mt-8 grid gap-6 lg:grid-cols-3">
+            <ul className="mt-8 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
               {reviews.map((review) => (
                 <li key={review.id}>
                   <ReviewCard
@@ -358,7 +391,7 @@ export function TourDetailPage() {
         {related.length > 0 ? (
           <section className="mt-20 pb-8">
             <SectionHeading title="More Handcrafted Journeys" actionLabel="View all tours" actionTo={paths.tours} />
-            <ul className="mt-8 grid gap-8 lg:grid-cols-3">
+            <ul className="mt-8 grid gap-6 sm:grid-cols-2 sm:gap-8 lg:grid-cols-3">
               {related.map((item) => (
                 <li key={item.id}>
                   <TourCard tour={item} />

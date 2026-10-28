@@ -80,11 +80,11 @@ function ContactLine({
   const content = (
     <>
       <Icon name={icon} className="text-[14px] text-accent" />
-      <span>{label}</span>
+      <span className="min-w-0 break-words">{label}</span>
     </>
   )
 
-  const classes = 'flex min-h-11 items-center gap-2.5 text-[13px] text-on-brand-muted lg:min-h-0 lg:text-[15px]'
+  const classes = 'flex min-h-11 min-w-0 items-start gap-2.5 text-[13px] break-words text-on-brand-muted lg:min-h-0 lg:items-center lg:text-[15px]'
 
   if (!value.trim()) {
     return <p className={classes}>{content}</p>
@@ -191,11 +191,6 @@ export function Footer() {
                 </Link>
               </li>
               <li>
-                <Link to={paths.vehicles} className="hover:text-on-brand">
-                  Vehicles
-                </Link>
-              </li>
-              <li>
                 <Link to={paths.contact} className="hover:text-on-brand">
                   Contact Us
                 </Link>
@@ -284,7 +279,6 @@ export function Footer() {
               [paths.home, 'Home'],
               [paths.tours, 'Tours'],
               [paths.destinations, 'Destinations'],
-              [paths.vehicles, 'Vehicles'],
               [paths.about, 'About Us'],
               [paths.gallery, 'Gallery'],
               [paths.reviews, 'Reviews'],

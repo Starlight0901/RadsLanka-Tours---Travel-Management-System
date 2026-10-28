@@ -6,9 +6,9 @@ import { cn } from '@/utils/cn.ts'
 
 export function DesktopHeader() {
   return (
-    <div className="hidden h-20 items-center justify-between px-12 lg:flex">
+    <div className="hidden h-20 items-center justify-between gap-4 px-6 lg:flex xl:px-12">
       <SiteLogo />
-      <nav className="flex items-center gap-6" aria-label="Main">
+      <nav className="flex min-w-0 items-center gap-3 xl:gap-6" aria-label="Main">
         {publicNavItems.map((item) => (
           <NavLink
             key={item.to}
@@ -16,7 +16,7 @@ export function DesktopHeader() {
             end={item.end}
             className={({ isActive }) =>
               cn(
-                'relative py-2 text-[15px] font-semibold tracking-[0.15px] text-muted transition hover:text-brand',
+                'relative py-2 text-[13px] font-semibold tracking-[0.15px] whitespace-nowrap text-muted transition hover:text-brand xl:text-[15px]',
                 isActive && 'font-bold text-brand',
               )
             }

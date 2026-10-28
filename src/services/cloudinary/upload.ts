@@ -1,4 +1,5 @@
 import { env, isCloudinaryConfigured } from '@/config/env.ts'
+import { assertGalleryImageFile } from '@/utils/galleryLimits.ts'
 
 export type CloudinaryUploadResult = {
   secure_url: string
@@ -66,4 +67,10 @@ export async function uploadImage(file: File): Promise<CloudinaryUploadResult> {
     secure_url: payload.secure_url,
     public_id: payload.public_id,
   }
+}
+
+/** Gallery uploads only. Hero and other CMS images continue to use `uploadImage`. */
+export async function uploadGalleryImage(file: File): Promise<CloudinaryUploadResult> {
+  assertGalleryImageFile(file)
+  return uploadImage(file)
 }

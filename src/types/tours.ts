@@ -45,7 +45,6 @@ export type CatalogTour = {
   price?: number
   priceLabel?: string
   priceNote?: string
-  travelStyle?: string
   journeyStyle?: string
   accommodation?: string
   routeLabel?: string

@@ -3,6 +3,7 @@ import heroBackground from '@/assets/background_hero_image-DVihLKhs.jpg'
 import { PageMeta } from '@/components/common/PageMeta.tsx'
 import { Reveal } from '@/components/common/Reveal.tsx'
 import { DestinationCard } from '@/components/destinations/DestinationCard.tsx'
+import { HeroBenefitsStrip } from '@/components/home/HeroBenefitsStrip.tsx'
 import { HomeInquirySection } from '@/components/home/HomeInquirySection.tsx'
 import { ReviewCard } from '@/components/reviews/ReviewCard.tsx'
 import { TourCard } from '@/components/tours/TourCard.tsx'
@@ -14,12 +15,16 @@ import { ErrorState } from '@/components/ui/ErrorState.tsx'
 import { Icon } from '@/components/ui/Icon.tsx'
 import { LoadingState } from '@/components/ui/LoadingState.tsx'
 import { SectionHeading } from '@/components/ui/SectionHeading.tsx'
-import { homeHero, homeReviews, homeTrustItems } from '@/data/home.ts'
+import { formatLocation } from '@/config/destinationContent.ts'
+import { homeHero, homeReviews } from '@/data/home.ts'
 import { overallPublishedRating } from '@/data/reviewCatalog.ts'
-import { listPublishedDestinations } from '@/data/destinationCatalog.ts'
 import { paths } from '@/routes/paths.ts'
+import { toCatalogDestination } from '@/services/firebase/destinationAdapter.ts'
+import { listPublishedFeaturedDestinations } from '@/services/firebase/destinations.ts'
+import { createDefaultPublicHeroBenefits, getPublicHeroBenefits } from '@/services/firebase/heroBenefits.ts'
 import { toCatalogTours } from '@/services/firebase/tourAdapter.ts'
 import { listPopularTours } from '@/services/firebase/tours.ts'
+import type { CatalogDestination } from '@/types/destinations.ts'
 import type { CatalogTour } from '@/types/tours.ts'
 import { createDefaultHomepageHero, getHomepageHeroContent } from '@/services/firebase/siteSettings.ts'
 import type { HeroTextBlock, HeroTextStyle } from '@/types/models.ts'
@@ -80,6 +85,31 @@ export function HomePage() {
   const [popularTours, setPopularTours] = useState<CatalogTour[]>([])
   const [popularLoading, setPopularLoading] = useState(true)
   const [popularError, setPopularError] = useState(false)
+  const [featuredDestinations, setFeaturedDestinations] = useState<CatalogDestination[]>([])
+  const [featuredLoading, setFeaturedLoading] = useState(true)
+  const [featuredError, setFeaturedError] = useState(false)
+  const [heroBenefits, setHeroBenefits] = useState(createDefaultPublicHeroBenefits)
+  const [heroBenefitsPending, setHeroBenefitsPending] = useState(true)
+
+  useEffect(() => {
+    let active = true
+
+    getPublicHeroBenefits()
+      .then((content) => {
+        if (active) {
+          setHeroBenefits(content)
+        }
+      })
+      .finally(() => {
+        if (active) {
+          setHeroBenefitsPending(false)
+        }
+      })
+
+    return () => {
+      active = false
+    }
+  }, [])
 
   useEffect(() => {
     let active = true
@@ -127,6 +157,43 @@ export function HomePage() {
     }
   }, [])
 
+  useEffect(() => {
+    let active = true
+
+    listPublishedFeaturedDestinations()
+      .then((records) => {
+        if (!active) {
+          return
+        }
+        setFeaturedDestinations(
+          records.map((record) => {
+            const destination = toCatalogDestination(record)
+            const location = formatLocation(record.glance.province, record.glance.district)
+            return {
+              ...destination,
+              region: location || undefined,
+              shortDescription: record.description.trim() || record.subtitle.trim(),
+            }
+          }),
+        )
+      })
+      .catch(() => {
+        if (active) {
+          setFeaturedError(true)
+          setFeaturedDestinations([])
+        }
+      })
+      .finally(() => {
+        if (active) {
+          setFeaturedLoading(false)
+        }
+      })
+
+    return () => {
+      active = false
+    }
+  }, [])
+
   const heroSummary = heroContent.heroTextBlocks
     .map((block) => block.text.trim())
     .filter(Boolean)
@@ -147,16 +214,16 @@ export function HomePage() {
           className="absolute inset-0 bg-gradient-to-r from-brand via-brand/70 to-transparent lg:via-brand/55"
           aria-hidden="true"
         />
-        <Container className="relative z-10 flex min-h-[50.9rem] items-end pb-40 pt-16 lg:min-h-[46.875rem] lg:items-center lg:py-0 lg:pb-24 lg:pt-10">
-          <div className="w-full max-w-xl lg:max-w-3xl">
+        <Container className="relative z-10 flex min-h-[50.9rem] items-end pb-28 pt-16 lg:min-h-[46.875rem] lg:items-center lg:py-0 lg:pb-24 lg:pt-10">
+          <div className="w-full min-w-0 max-w-xl lg:max-w-3xl">
             <HomepageHeroText blocks={heroContent.heroTextBlocks} />
             <p className="mt-6 max-w-lg text-body text-on-brand-soft/90">{heroContent.heroDescription}</p>
-            <div className="mt-8 flex flex-wrap gap-4">
-              <ButtonLink to={paths.tours} variant="secondary" className="lift-button gap-3 px-6">
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+              <ButtonLink to={paths.tours} variant="secondary" className="lift-button w-full gap-3 px-6 sm:w-auto">
                 {homeHero.primaryCta}
                 <Icon name="arrow_forward" className="text-[12px]" />
               </ButtonLink>
-              <ButtonLink to="#bespoke-planner" variant="primary" className="lift-button">
+              <ButtonLink to="#bespoke-planner" variant="primary" className="lift-button w-full sm:w-auto">
                 {homeHero.secondaryCta}
               </ButtonLink>
             </div>
@@ -170,28 +237,13 @@ export function HomePage() {
         </Container>
       </section>
 
-      <Container className="relative z-20 -mt-28 lg:-mt-14">
-        <Reveal>
-        <div className="rounded-2xl bg-surface-elevated px-6 py-8 shadow-[0_20px_50px_-12px_rgba(27,67,50,0.18)] lg:px-8 lg:py-8">
-          <ul className="grid grid-cols-2 gap-y-8 lg:grid-cols-6 lg:gap-0">
-            {homeTrustItems.map((item, index) => (
-              <li
-                key={item.title}
-                className={`flex flex-col items-center px-3 text-center ${index > 0 ? 'lg:border-l lg:border-border' : ''}`}
-              >
-                <span className="inline-flex size-12 items-center justify-center rounded-full bg-surface-mist text-brand shadow-control">
-                  <Icon name={item.icon} className="text-[20px]" />
-                </span>
-                <h2 className="mt-4 text-[15px] font-bold leading-snug text-brand">{item.title}</h2>
-                <p className="mt-1 text-[13px] leading-5 text-muted">{item.detail}</p>
-              </li>
-            ))}
-          </ul>
-        </div>
-        </Reveal>
-      </Container>
+      <HeroBenefitsStrip
+        items={heroBenefits.items}
+        mobileAutoScrollSpeed={heroBenefits.mobileAutoScrollSpeed}
+        pending={heroBenefitsPending}
+      />
 
-      <section className="pt-16 pb-8 lg:pt-28 lg:pb-12">
+      <section className="pt-14 pb-8 lg:pt-20 lg:pb-12">
         <Container>
           <Reveal>
           <SectionHeading
@@ -219,7 +271,7 @@ export function HomePage() {
             </div>
           ) : null}
           {!popularLoading && !popularError && popularTours.length > 0 ? (
-            <ul className="mt-10 grid gap-8 lg:grid-cols-3 lg:items-start">
+            <ul className="mt-10 grid gap-8 sm:grid-cols-2 lg:grid-cols-3 lg:items-start">
               {popularTours.map((tour, index) => (
                 <li key={tour.id} className="reveal-card" style={{ animationDelay: `${index * 80}ms` }}>
                   <TourCard tour={tour} />
@@ -246,15 +298,36 @@ export function HomePage() {
             title="Destinations"
             description="From ancient kingdoms and misty tea highlands to golden southern shores and untamed wilderness. Discover Sri Lanka’s iconic heritage, breathtaking landscapes, and tranquil coastal escapes, each with its own story to tell."
           />
-          <ul className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {listPublishedDestinations()
-              .slice(0, 6)
-              .map((destination, index) => (
+          {featuredLoading ? (
+            <div className="mt-10">
+              <LoadingState label="Loading destinations" />
+            </div>
+          ) : null}
+          {featuredError ? (
+            <div className="mt-10">
+              <ErrorState
+                title="Destinations are unavailable"
+                message="The rest of this page is still available."
+              />
+            </div>
+          ) : null}
+          {!featuredLoading && !featuredError && featuredDestinations.length === 0 ? (
+            <div className="mt-10">
+              <EmptyState
+                title="No featured destinations yet"
+                message="Published destinations marked as featured will appear here."
+              />
+            </div>
+          ) : null}
+          {!featuredLoading && !featuredError && featuredDestinations.length > 0 ? (
+            <ul className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {featuredDestinations.map((destination, index) => (
                 <li key={destination.id} className="reveal-card" style={{ animationDelay: `${index * 80}ms` }}>
                   <DestinationCard destination={destination} variant="overlay" />
                 </li>
               ))}
-          </ul>
+            </ul>
+          ) : null}
           <div className="mt-10 flex justify-center">
             <ButtonLink to={paths.destinations} variant="primary" className="lift-button">
               View All Destinations
@@ -285,7 +358,7 @@ export function HomePage() {
               <Icon name="star" filled className="text-[20px] text-accent" label={`${reviewRating.toFixed(1)} out of 5`} />
             </p>
           ) : null}
-          <ul className="mt-10 grid gap-8 lg:grid-cols-3 lg:items-start">
+          <ul className="mt-10 grid gap-8 md:grid-cols-2 lg:grid-cols-3 lg:items-start">
             {homeReviews.map((review, index) => (
               <li key={`${review.travelerName}-${index}`} className="reveal-card" style={{ animationDelay: `${index * 80}ms` }}>
                 <ReviewCard {...review} />

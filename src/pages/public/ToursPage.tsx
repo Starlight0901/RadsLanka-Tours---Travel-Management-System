@@ -40,16 +40,6 @@ export function ToursPage() {
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState(false)
   const tours = useMemo(() => filterTours(publishedTours, filters), [publishedTours, filters])
-  const availableStyles = useMemo(() => {
-    const names = new Set<string>()
-    for (const tour of publishedTours) {
-      const name = tour.travelStyle?.trim()
-      if (name) {
-        names.add(name)
-      }
-    }
-    return [...names].sort((a, b) => a.localeCompare(b))
-  }, [publishedTours])
   const availableTags = useMemo(() => {
     const names = new Set<string>()
     for (const tour of publishedTours) {
@@ -96,10 +86,10 @@ export function ToursPage() {
     <>
       <PageMeta title="Tours" description={listingCopy.intro} />
 
-      <section className="relative isolate overflow-hidden text-on-brand">
+      <section className="relative isolate overflow-hidden text-on-brand lg:flex lg:h-[66.67vh] lg:flex-col">
         <img src={heroBackground} alt="" className="absolute inset-0 h-full w-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-r from-brand via-brand/75 to-brand/30" aria-hidden="true" />
-        <Container className="relative z-10 pt-10 pb-24 lg:pt-16 lg:pb-36">
+        <Container className="relative z-10 pt-10 pb-24 lg:flex lg:flex-1 lg:flex-col lg:justify-center lg:pt-20 lg:pb-16">
           <Reveal>
           <h1 className="max-w-4xl font-display text-[2.5rem] leading-tight font-semibold lg:text-[3.75rem]">
             {listingCopy.title}
@@ -119,7 +109,6 @@ export function ToursPage() {
           <div className="relative">
           <FilterFields
             filters={filters}
-            availableStyles={availableStyles}
             availableTags={availableTags}
             onChange={update}
             onReset={() => setFilters(defaultTourListFilters)}
@@ -143,7 +132,6 @@ export function ToursPage() {
       <Drawer open={filtersOpen} title="Filter tours" onClose={() => setFiltersOpen(false)}>
         <FilterFields
           filters={filters}
-          availableStyles={availableStyles}
           availableTags={availableTags}
           onChange={update}
           onReset={() => setFilters(defaultTourListFilters)}
@@ -191,7 +179,7 @@ export function ToursPage() {
           ) : null}
 
           {!loading && !loadError && tours.length > 0 ? (
-            <ul className="mt-8 grid gap-8 lg:grid-cols-3">
+            <ul className="mt-8 grid gap-6 sm:grid-cols-2 sm:gap-8 lg:grid-cols-3">
               {tours.map((tour, index) => (
                 <li key={tour.id} className="reveal-card" style={{ animationDelay: `${Math.min(index, 8) * 80}ms` }}>
                   <TourCard tour={tour} />
@@ -218,7 +206,6 @@ function filtersAreActive(filters: TourListFilters) {
     filters.query.trim() !== '' ||
     filters.duration !== defaultTourListFilters.duration ||
     filters.region !== defaultTourListFilters.region ||
-    filters.style !== defaultTourListFilters.style ||
     filters.quick !== defaultTourListFilters.quick ||
     filters.tags.length > 0 ||
     filters.budget !== defaultTourListFilters.budget ||
@@ -228,13 +215,11 @@ function filtersAreActive(filters: TourListFilters) {
 
 function FilterFields({
   filters,
-  availableStyles,
   availableTags,
   onChange,
   onReset,
 }: {
   filters: TourListFilters
-  availableStyles: string[]
   availableTags: string[]
   onChange: <K extends keyof TourListFilters>(key: K, value: TourListFilters[K]) => void
   onReset: () => void
@@ -248,7 +233,7 @@ function FilterFields({
           <input
             value={filters.query}
             onChange={(event) => onChange('query', event.target.value)}
-            placeholder="Search by place, style, or keyword"
+            placeholder="Search by place or keyword"
             className={cn(filterControlClass, 'w-full pr-3 pl-9')}
           />
         </label>
@@ -264,16 +249,6 @@ function FilterFields({
           value={filters.region}
           options={tourRegionFilters.map((option) => ({ value: option.value, label: option.label }))}
           onChange={(value) => onChange('region', value)}
-          className="lg:w-40"
-        />
-        <GlassFilterSelect
-          label="Travel style"
-          value={filters.style}
-          options={[
-            { value: 'all', label: 'All travel styles' },
-            ...availableStyles.map((style) => ({ value: style, label: style })),
-          ]}
-          onChange={(value) => onChange('style', value)}
           className="lg:w-40"
         />
         <GlassFilterSelect

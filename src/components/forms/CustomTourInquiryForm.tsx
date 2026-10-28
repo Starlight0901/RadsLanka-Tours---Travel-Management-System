@@ -158,7 +158,7 @@ export function CustomTourInquiryForm({ className }: CustomTourInquiryFormProps)
         </div>
       ) : null}
 
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid min-w-0 gap-4 md:grid-cols-3">
         <div>
           <label htmlFor="inquiry-name" className="mb-1.5 block text-sm font-medium text-slate-700">
             Your Name
@@ -206,7 +206,7 @@ export function CustomTourInquiryForm({ className }: CustomTourInquiryFormProps)
         </div>
       </div>
 
-      <div className="mt-4 grid gap-4 md:grid-cols-3">
+      <div className="mt-4 grid min-w-0 gap-4 md:grid-cols-3">
         <div>
           <p className="mb-1.5 text-sm font-medium text-slate-700">Travel Dates</p>
           <div className="grid grid-cols-2 gap-2">

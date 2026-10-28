@@ -1,12 +1,11 @@
 import { listPublishedAccommodations, type AccommodationRecord } from '@/services/firebase/accommodations.ts'
 import { listAllTags, type TagRecord } from '@/services/firebase/tags.ts'
-import { listAllTravelStyles, type TravelStyleRecord } from '@/services/firebase/travelStyles.ts'
 import { listPublishedDestinations, type DestinationRecord } from '@/services/firebase/destinations.ts'
 import type { Tour } from '@/types/models.ts'
 import type { CatalogAccommodation, CatalogTour } from '@/types/tours.ts'
-import { formatLkrAmount, pricingBasisNote } from '@/utils/tourPricing.ts'
+import { formatTourPrice, pricingBasisNote } from '@/utils/tourPricing.ts'
 
-type PublicTourRecord = Tour & { id: string; legacyTravelStyle?: string }
+type PublicTourRecord = Tour & { id: string }
 
 function durationDays(duration: string, itineraryLength: number): number {
   const match = duration.match(/\d+/)
@@ -18,10 +17,6 @@ function durationDays(duration: string, itineraryLength: number): number {
   }
 
   return itineraryLength > 0 ? itineraryLength : 1
-}
-
-function formatPrice(price: number): string {
-  return formatLkrAmount(price)
 }
 
 function toCatalogAccommodation(record: AccommodationRecord): CatalogAccommodation {
@@ -42,13 +37,6 @@ function toCatalogAccommodation(record: AccommodationRecord): CatalogAccommodati
   }
 }
 
-function resolveTravelStyleName(tour: PublicTourRecord, styles: TravelStyleRecord[]): string | undefined {
-  const selected = styles.find((style) => style.id === tour.travelStyleId)?.name.trim()
-  const legacy = tour.legacyTravelStyle?.trim()
-  const name = selected || legacy || ''
-  return name || undefined
-}
-
 function resolveTagNames(ids: string[] | undefined, tags: TagRecord[]): string[] {
   const byId = new Map(tags.map((tag) => [tag.id, tag]))
   const names: string[] = []
@@ -66,7 +54,6 @@ export function toCatalogTour(
   destinations: DestinationRecord[],
   accommodations: AccommodationRecord[] = [],
   tags: TagRecord[] = [],
-  travelStyles: TravelStyleRecord[] = [],
 ): CatalogTour {
   const byId = new Map(destinations.map((destination) => [destination.id, destination]))
   const matched = tour.destinations
@@ -90,9 +77,8 @@ export function toCatalogTour(
     duration: tour.duration,
     durationDays: durationDays(tour.duration, tour.itinerary.length),
     price: tour.price,
-    priceLabel: formatPrice(tour.price),
+    priceLabel: formatTourPrice(tour.price),
     priceNote: pricingBasisNote(tour.pricingBasis ?? 'per_person', tour.pricingCustomLabel ?? ''),
-    travelStyle: resolveTravelStyleName(tour, travelStyles),
     routeLabel: routeLabel || undefined,
     routeSummary: routeLabel || undefined,
     tags: resolveTagNames(tour.tagIds, tags),
@@ -109,7 +95,7 @@ export function toCatalogTour(
       day: day.day,
       title: day.title,
       summary: day.description,
-      locations: day.locations,
+      locations: day.locations.map((location) => location.name).filter(Boolean),
     })),
     inclusions: [...tour.included],
     exclusions: [...tour.excluded],
@@ -130,7 +116,6 @@ export async function toCatalogTours(records: PublicTourRecord[]): Promise<Catal
   let destinations: DestinationRecord[] = []
   let accommodations: AccommodationRecord[] = []
   let tags: TagRecord[] = []
-  let travelStyles: TravelStyleRecord[] = []
   try {
     destinations = await listPublishedDestinations()
   } catch {
@@ -146,11 +131,6 @@ export async function toCatalogTours(records: PublicTourRecord[]): Promise<Catal
   } catch {
     tags = []
   }
-  try {
-    travelStyles = await listAllTravelStyles()
-  } catch {
-    travelStyles = []
-  }
 
-  return records.map((record) => toCatalogTour(record, destinations, accommodations, tags, travelStyles))
+  return records.map((record) => toCatalogTour(record, destinations, accommodations, tags))
 }

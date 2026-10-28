@@ -16,7 +16,7 @@ export function MobileNavMenu({ open, onClose }: MobileNavMenuProps) {
   return (
     <nav
       id="mobile-nav-menu"
-      className="border-t border-border bg-surface-mist px-5 py-4 lg:hidden"
+      className="max-h-[calc(100dvh-7.5rem)] overflow-y-auto overscroll-contain border-t border-border bg-surface-mist px-5 py-4 lg:hidden"
       aria-label="Mobile"
     >
       <ul className="flex flex-col">

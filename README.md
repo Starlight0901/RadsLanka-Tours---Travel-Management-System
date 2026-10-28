@@ -50,7 +50,6 @@ The website must feel professional, warm, and travel-focused — premium enough 
 - Home
 - Tours and tour details
 - Destinations and destination details
-- Vehicles (dedicated page only — **not** a homepage section)
 - About Us
 - Gallery
 - Reviews
@@ -63,7 +62,7 @@ The website must feel professional, warm, and travel-focused — premium enough 
 
 - Login
 - Dashboard
-- Tours, Destinations, Vehicles, Reviews, Gallery, Inquiries, Site Settings
+- Tours, Destinations, Reviews, Gallery, Inquiries, Site Settings
 
 **Phase 1 explicitly excludes:**
 
@@ -211,7 +210,8 @@ Document IDs should be stable generated IDs (Firestore auto-IDs), not human-read
 | `reviews` | Testimonials. Public read only when published. Creates start as unpublished. |
 | `gallery` | Standalone gallery items. Public read only when published. |
 | `inquiries` | Package, custom-tour, and general inquiries. Public **create** only. Admin read/update. |
-| `siteSettings` | Singleton (or small set of docs) for logo, contact, hero copy, social links, footer. Public read. |
+| `siteSettings` | Singleton (or small set of docs) for logo, contact, hero copy, social links, footer. Public read. The `heroBenefits` document stores `mobileAutoScrollSpeed` (1–10) and the one-time `initialized` seed flag. |
+| `heroBenefits` | Up to six homepage hero benefits (`title`, `description`, `icon`, `order`, `published`). Managed under Site Settings. Public read only when published. |
 
 ### Future collections (Phase 2+)
 
@@ -284,7 +284,7 @@ Values come from `siteSettings` once that module exists. Until then the layout u
 
 **Main navigation**
 
-Home · Tours · Destinations · Vehicles · About Us · Gallery · Reviews · Contact Us · **BOOK NOW** (visually highlighted)
+Home · Tours · Destinations · About Us · Gallery · Reviews · Contact Us · **BOOK NOW** (visually highlighted)
 
 **BOOK NOW** is the primary inquiry entry point. In Phase 1 it routes to the custom-tour / booking inquiry page (`/custom-tour`).
 
@@ -304,7 +304,7 @@ Logo, short description, quick links, services, contact details, social links, P
 6. Recent reviews — only real, **published** reviews. Empty state if none. **Never generate fake reviews.**
 7. Footer
 
-**Do not** add a Vehicles / “Travel Comfortably” block on the homepage. Vehicles have their own page.
+**Do not** add a Vehicles / “Travel Comfortably” block on the homepage. There is no public Vehicles page; `/vehicles` redirects to `/tours`.
 
 ### Public URL map
 
@@ -315,7 +315,6 @@ Logo, short description, quick links, services, contact details, social links, P
 | `/tours/:slug` | Tour detail (cover, duration, price, overview, destinations, itinerary, inclusions/exclusions, gallery, important info, book/inquiry, related tours, tour-specific published reviews) |
 | `/destinations` | Destination listing |
 | `/destinations/:slug` | Destination detail (overview, things to do, places, best time, travel info, gallery, related tours) |
-| `/vehicles` | Vehicles |
 | `/about` | About Us |
 | `/gallery` | Gallery |
 | `/reviews` | All published reviews |
@@ -336,13 +335,12 @@ Logo, short description, quick links, services, contact details, social links, P
 | `/admin` | Dashboard |
 | `/admin/tours` | Tour CMS |
 | `/admin/destinations` | Destination CMS |
-| `/admin/vehicles` | Vehicle CMS |
 | `/admin/reviews` | Review moderation |
 | `/admin/gallery` | Gallery CMS |
 | `/admin/inquiries` | Inquiry inbox and status updates |
 | `/admin/settings` | Site settings |
 
-Dashboard (when implemented) should show totals for tours, destinations, vehicles, reviews, new inquiries, a bookings placeholder, and a recent-inquiry list. Phase 2 bookings can stay a labelled placeholder.
+Dashboard (when implemented) should show totals for tours, destinations, reviews, new inquiries, a bookings placeholder, and a recent-inquiry list. Phase 2 bookings can stay a labelled placeholder.
 
 Admin UX is functional and quiet. It must not reuse the public marketing look.
 

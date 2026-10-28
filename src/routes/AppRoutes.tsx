@@ -1,7 +1,8 @@
-import { Route, Routes } from 'react-router-dom'
+import { Navigate, Route, Routes } from 'react-router-dom'
 import { AdminLayout } from '@/layouts/AdminLayout.tsx'
 import { PublicLayout } from '@/layouts/PublicLayout.tsx'
-import { AdminAccommodationsPage } from '@/pages/admin/AdminAccommodationsPage.tsx'
+import { AdminAboutPage } from '@/pages/admin/AdminAboutPage.tsx'
+import { AdminContactFaqsPage } from '@/pages/admin/AdminContactFaqsPage.tsx'
 import { AdminDashboardPage } from '@/pages/admin/AdminDashboardPage.tsx'
 import { AdminDestinationsPage } from '@/pages/admin/AdminDestinationsPage.tsx'
 import { AdminGalleryPage } from '@/pages/admin/AdminGalleryPage.tsx'
@@ -10,7 +11,6 @@ import { AdminNotFoundPage } from '@/pages/admin/AdminNotFoundPage.tsx'
 import { AdminReviewsPage } from '@/pages/admin/AdminReviewsPage.tsx'
 import { AdminSettingsPage } from '@/pages/admin/AdminSettingsPage.tsx'
 import { AdminToursPage } from '@/pages/admin/AdminToursPage.tsx'
-import { AdminVehiclesPage } from '@/pages/admin/AdminVehiclesPage.tsx'
 import { AdminWhyTravelersPage } from '@/pages/admin/AdminWhyTravelersPage.tsx'
 import { AdminLoginPage } from '@/pages/auth/AdminLoginPage.tsx'
 import { AboutPage } from '@/pages/public/AboutPage.tsx'
@@ -26,9 +26,9 @@ import { ReviewsPage } from '@/pages/public/ReviewsPage.tsx'
 import { TermsPage } from '@/pages/public/TermsPage.tsx'
 import { TourDetailPage } from '@/pages/public/TourDetailPage.tsx'
 import { ToursPage } from '@/pages/public/ToursPage.tsx'
-import { VehiclesPage } from '@/pages/public/VehiclesPage.tsx'
 import { WriteAReviewPage } from '@/pages/public/WriteAReviewPage.tsx'
 import { GuestRoute } from '@/routes/GuestRoute.tsx'
+import { paths } from '@/routes/paths.ts'
 import { ProtectedRoute } from '@/routes/ProtectedRoute.tsx'
 
 export function AppRoutes() {
@@ -43,9 +43,11 @@ export function AppRoutes() {
           <Route index element={<AdminDashboardPage />} />
           <Route path="tours" element={<AdminToursPage />} />
           <Route path="destinations" element={<AdminDestinationsPage />} />
-          <Route path="accommodations" element={<AdminAccommodationsPage />} />
+          <Route path="accommodations" element={<Navigate to={paths.admin.root} replace />} />
+          <Route path="about" element={<AdminAboutPage />} />
           <Route path="why-travelers" element={<AdminWhyTravelersPage />} />
-          <Route path="vehicles" element={<AdminVehiclesPage />} />
+          <Route path="contact-faqs" element={<AdminContactFaqsPage />} />
+          <Route path="vehicles" element={<Navigate to={paths.admin.root} replace />} />
           <Route path="reviews" element={<AdminReviewsPage />} />
           <Route path="gallery" element={<AdminGalleryPage />} />
           <Route path="inquiries" element={<AdminInquiriesPage />} />
@@ -64,7 +66,7 @@ export function AppRoutes() {
           <Route index element={<DestinationsPage />} />
           <Route path=":slug" element={<DestinationDetailPage />} />
         </Route>
-        <Route path="vehicles" element={<VehiclesPage />} />
+        <Route path="vehicles" element={<Navigate to={paths.tours} replace />} />
         <Route path="about" element={<AboutPage />} />
         <Route path="gallery" element={<GalleryPage />} />
         <Route path="reviews" element={<ReviewsPage />} />

@@ -18,14 +18,19 @@ import {
   type MediaAsset,
   type Tour,
   type TourItineraryDay,
+  type TourItineraryLocation,
   type TourPricingBasis,
 } from '@/types/models.ts'
+import {
+  associatedGalleryKeys,
+  embeddedTourGalleryImages,
+  exceedsGalleryLimit,
+  galleryLimitMessage,
+} from '@/utils/galleryLimits.ts'
 import { isPricingBasis } from '@/utils/tourPricing.ts'
 
 export type TourRecord = Tour & {
   id: string
-  /** Free-text value stored on tours created before travel styles were a collection. */
-  legacyTravelStyle: string
 }
 
 export type TourInput = Omit<Tour, 'createdAt' | 'updatedAt'>
@@ -54,6 +59,29 @@ function readStringList(value: unknown): string[] {
   return value.filter((item): item is string => typeof item === 'string')
 }
 
+function readLocations(value: unknown): TourItineraryLocation[] {
+  if (!Array.isArray(value)) {
+    return []
+  }
+
+  return value.flatMap((item) => {
+    if (typeof item === 'string') {
+      const name = item.trim()
+      return name ? [{ name }] : []
+    }
+    if (!item || typeof item !== 'object') {
+      return []
+    }
+    const record = item as Record<string, unknown>
+    const name = readString(record.name).trim()
+    if (!name) {
+      return []
+    }
+    const destinationId = readString(record.destinationId).trim()
+    return destinationId ? [{ name, destinationId }] : [{ name }]
+  })
+}
+
 function readItinerary(value: unknown): TourItineraryDay[] {
   if (!Array.isArray(value)) {
     return []
@@ -71,7 +99,7 @@ function readItinerary(value: unknown): TourItineraryDay[] {
       day,
       title: readString(record.title),
       description: readString(record.description),
-      locations: readStringList(record.locations),
+      locations: readLocations(record.locations),
     }
   })
 }
@@ -116,8 +144,6 @@ function toTour(id: string, data: Record<string, unknown>): TourRecord {
     price,
     pricingBasis: readPricingBasis(data.pricingBasis),
     pricingCustomLabel: readString(data.pricingCustomLabel),
-    travelStyleId: readString(data.travelStyleId),
-    legacyTravelStyle: readString(data.travelStyle),
     destinations: readStringList(data.destinations),
     accommodationIds: readStringList(data.accommodationIds),
     tagIds: readStringList(data.tagIds),
@@ -186,13 +212,27 @@ function toStoredImage(image: MediaAsset): MediaAsset {
   return stored
 }
 
+function toStoredLocations(locations: TourItineraryLocation[]): TourItineraryLocation[] {
+  return locations.flatMap((location) => {
+    const name = location.name.trim()
+    if (!name) {
+      return []
+    }
+    if (name.length > ITEM_MAX) {
+      throw new Error(`Keep each location under ${ITEM_MAX} characters.`)
+    }
+    const destinationId = location.destinationId?.trim() ?? ''
+    return destinationId ? [{ name, destinationId }] : [{ name }]
+  })
+}
+
 function toStoredItinerary(days: TourItineraryDay[]): TourItineraryDay[] {
   const stored: TourItineraryDay[] = []
 
   for (const day of days) {
     const title = day.title.trim()
     const description = day.description.trim()
-    const locations = cleanItems(day.locations, 'location')
+    const locations = toStoredLocations(day.locations)
     if (!title && !description && locations.length === 0) {
       continue
     }
@@ -220,8 +260,6 @@ function sanitizeTourInput(input: TourInput): TourInput {
   const slug = requireText(input.slug, 'tour slug', SLUG_MAX)
   const description = input.description.trim()
   const duration = requireText(input.duration, 'duration', DURATION_MAX)
-  const travelStyleId = (input.travelStyleId ?? '').trim()
-
   if (description.length > DESCRIPTION_MAX) {
     throw new Error(`Keep the description under ${DESCRIPTION_MAX} characters.`)
   }
@@ -245,7 +283,6 @@ function sanitizeTourInput(input: TourInput): TourInput {
     price: input.price,
     pricingBasis,
     pricingCustomLabel: pricingBasis === 'custom' ? pricingCustomLabel : '',
-    travelStyleId,
     destinations: input.destinations.map((id) => id.trim()).filter(Boolean),
     accommodationIds: (input.accommodationIds ?? []).map((id) => id.trim()).filter(Boolean),
     tagIds: (input.tagIds ?? []).map((id) => id.trim()).filter(Boolean),
@@ -275,6 +312,30 @@ function createdAtMillis(tour: TourRecord): number {
   }
 
   return 0
+}
+
+export function tourFeaturesDestination(tour: { itinerary: TourItineraryDay[] }, destinationId: string): boolean {
+  const id = destinationId.trim()
+  if (!id) {
+    return false
+  }
+  return tour.itinerary.some((day) => day.locations.some((location) => location.destinationId === id))
+}
+
+export function filterToursFeaturingDestination(tours: TourRecord[], destinationId: string): TourRecord[] {
+  const id = destinationId.trim()
+  if (!id) {
+    return []
+  }
+
+  const seen = new Set<string>()
+  return tours.filter((tour) => {
+    if (!tour.published || seen.has(tour.id) || !tourFeaturesDestination(tour, id)) {
+      return false
+    }
+    seen.add(tour.id)
+    return true
+  })
 }
 
 export async function listPublishedTours(): Promise<TourRecord[]> {
@@ -353,8 +414,39 @@ export async function getTour(id: string): Promise<TourRecord | null> {
   return toTour(snapshot.id, snapshot.data())
 }
 
+async function galleryAssociationRecords() {
+  const snapshot = await getDocs(collection(requireDb(), FIRESTORE_COLLECTIONS.gallery))
+  return snapshot.docs.map((item) => {
+    const data = item.data()
+    return {
+      id: item.id,
+      publicId: typeof data.publicId === 'string' ? data.publicId : '',
+      imageUrl: typeof data.imageUrl === 'string' ? data.imageUrl : '',
+      tourId: typeof data.tourId === 'string' ? data.tourId : '',
+    }
+  })
+}
+
+async function assertTourGalleryLimit(tourId: string | undefined, nextImages: MediaAsset[], previousImages: MediaAsset[]) {
+  const records = tourId ? await galleryAssociationRecords() : []
+  const previousCount = associatedGalleryKeys({
+    embedded: embeddedTourGalleryImages(previousImages),
+    records,
+    tourId,
+  }).size
+  const nextCount = associatedGalleryKeys({
+    embedded: embeddedTourGalleryImages(nextImages),
+    records,
+    tourId,
+  }).size
+  if (exceedsGalleryLimit(nextCount, previousCount)) {
+    throw new Error(galleryLimitMessage('tour'))
+  }
+}
+
 export async function createTour(input: TourInput): Promise<string> {
   const tour = sanitizeTourInput(input)
+  await assertTourGalleryLimit(undefined, tour.images, [])
   const ref = await addDoc(collection(requireDb(), FIRESTORE_COLLECTIONS.tours), {
     ...tour,
     createdAt: serverTimestamp(),
@@ -376,6 +468,7 @@ export async function updateTour(id: string, input: TourInput): Promise<void> {
   if (!existing.exists()) {
     throw new Error('This tour could not be found.')
   }
+  await assertTourGalleryLimit(tourId, tour.images, readImages(existing.data().images))
 
   await updateDoc(ref, {
     ...tour,

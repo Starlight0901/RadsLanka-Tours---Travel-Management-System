@@ -80,11 +80,7 @@ export function TourCard({ tour }: TourCardProps) {
           {tour.priceLabel ? (
             <div className="min-w-0 rounded-xl border border-[rgba(201,151,0,0.4)] bg-[rgba(201,151,0,0.12)] px-3 py-2">
               <p className="text-[15px] leading-tight font-bold text-[#1B4332]">
-                {tour.priceLabel.startsWith('[')
-                  ? tour.priceLabel
-                  : /^LKR\b/i.test(tour.priceLabel)
-                    ? `From ${tour.priceLabel}`
-                    : `From LKR ${tour.priceLabel}`}
+                {tour.priceLabel.startsWith('[') ? tour.priceLabel : `From ${tour.priceLabel}`}
               </p>
               {tour.priceNote ? (
                 <p className="mt-0.5 text-[11px] font-medium text-[#1B4332]/75">{tour.priceNote}</p>

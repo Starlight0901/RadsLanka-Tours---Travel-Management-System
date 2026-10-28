@@ -89,7 +89,7 @@ export function ReviewsPage() {
           {reviews.length === 0 ? (
             <EmptyState title="No matching reviews" message="Only approved reviews are shown. Try another filter or search." />
           ) : (
-            <ul className="grid gap-8 lg:grid-cols-2">
+            <ul className="grid gap-6 md:grid-cols-2 md:gap-8">
               {reviews.map((review) => (
                 <li key={review.id}>
                   <ReviewCard
@@ -113,7 +113,7 @@ export function ReviewsPage() {
       <section className="bg-surface-elevated py-16 lg:py-24">
         <Container>
           <SectionHeading align="center" eyebrow="OUR TRUST PROMISE" title="Authenticity standards" />
-          <ul className="mt-10 grid gap-6 lg:grid-cols-3">
+          <ul className="mt-10 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {trustPillars.map((item) => (
               <li key={item.title} className="rounded-2xl bg-surface p-8 shadow-card">
                 <Icon name={item.icon} className="text-brand" />

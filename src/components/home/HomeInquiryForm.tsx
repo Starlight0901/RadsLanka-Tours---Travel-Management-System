@@ -70,7 +70,7 @@ export function HomeInquiryForm() {
         </ul>
       </fieldset>
 
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid min-w-0 gap-4 sm:grid-cols-3">
         <FormInput id="home-name" name="name" label="Your name" autoComplete="name" placeholder="e.g. Sarah Jenkins" />
         <FormInput
           id="home-email"

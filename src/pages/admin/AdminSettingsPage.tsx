@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
+import { HeroBenefitsManager } from '@/components/admin/HeroBenefitsManager.tsx'
 import { FormError } from '@/components/forms/FormError.tsx'
 import { PageMeta } from '@/components/common/PageMeta.tsx'
 import { AdminHeader } from '@/components/layout/AdminHeader.tsx'
@@ -171,7 +172,7 @@ export function AdminSettingsPage() {
     <>
       <PageMeta
         title="Admin · Site settings"
-        description="Edit the homepage hero text, formatting, and description."
+        description="Edit the homepage hero text, formatting, description, and hero benefits."
       />
       <AdminHeader title="Site settings" />
       <div className="space-y-6 p-6">
@@ -281,6 +282,8 @@ export function AdminSettingsPage() {
             </div>
           </form>
         ) : null}
+
+        {isFirebaseConfigured ? <HeroBenefitsManager /> : null}
       </div>
     </>
   )

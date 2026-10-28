@@ -24,7 +24,7 @@ export function TourItinerary({ days }: TourItineraryProps) {
 
   return (
     <section>
-      <div className="flex items-end justify-between gap-4">
+      <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="text-[11px] font-bold tracking-[0.1em] text-eyebrow uppercase">Itinerary</p>
           <h2 className="mt-1 font-display text-[2rem] leading-tight font-semibold text-brand">
@@ -33,7 +33,7 @@ export function TourItinerary({ days }: TourItineraryProps) {
         </div>
         <button
           type="button"
-          className="hidden min-h-11 items-center gap-1 text-[15px] font-semibold text-brand lg:inline-flex"
+          className="inline-flex min-h-11 shrink-0 items-center gap-1 text-[15px] font-semibold text-brand"
           onClick={() => setAll(!allOpen)}
         >
           <Icon name={allOpen ? 'unfold_less' : 'unfold_more'} className="text-[16px]" />
@@ -58,7 +58,7 @@ export function TourItinerary({ days }: TourItineraryProps) {
                   <span className="rounded-full bg-chip px-2.5 py-1 text-[11px] font-bold tracking-[0.4px] text-chip-text uppercase">
                     Day {day.day}
                   </span>
-                  <h3 className="text-lg font-bold text-brand">{day.title}</h3>
+                  <h3 className="min-w-0 flex-1 text-lg font-bold break-words text-brand">{day.title}</h3>
                   {day.stay ? (
                     <span className="ml-auto rounded-full bg-surface-mist px-3 py-1 text-[11px] font-bold tracking-[0.4px] text-brand">
                       {day.stay}
@@ -68,15 +68,15 @@ export function TourItinerary({ days }: TourItineraryProps) {
                 </button>
                 {open ? <p className="mt-3 text-body text-muted">{day.summary}</p> : null}
                 {open && day.locations && day.locations.length > 0 ? (
-                  <p className="mt-4 flex items-center gap-2 border-t border-border pt-3 text-[13px] text-muted">
-                    <Icon name="place" className="text-[14px]" />
-                    {day.locations.join(' · ')}
+                  <p className="mt-4 flex items-start gap-2 border-t border-border pt-3 text-[13px] text-muted">
+                    <Icon name="place" className="mt-0.5 shrink-0 text-[14px]" />
+                    <span className="min-w-0 break-words">{day.locations.join(' · ')}</span>
                   </p>
                 ) : null}
                 {open && day.meals ? (
-                  <p className="mt-4 flex items-center gap-2 border-t border-border pt-3 text-[13px] text-muted">
-                    <Icon name="restaurant" className="text-[14px]" />
-                    {day.meals}
+                  <p className="mt-4 flex items-start gap-2 border-t border-border pt-3 text-[13px] text-muted">
+                    <Icon name="restaurant" className="mt-0.5 shrink-0 text-[14px]" />
+                    <span className="min-w-0 break-words">{day.meals}</span>
                   </p>
                 ) : null}
               </div>

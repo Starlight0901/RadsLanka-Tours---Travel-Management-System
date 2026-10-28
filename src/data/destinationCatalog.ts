@@ -22,11 +22,3 @@ export function getPublishedReviewsForDestination(destinationId: string): Catalo
   )
 }
 
-export const destinationRegionJumps = [
-  { id: 'all', label: 'All regions' },
-  { id: 'sigiriya', label: 'Cultural Triangle' },
-  { id: 'nuwara-eliya', label: 'Tea Country' },
-  { id: 'yala-minneriya', label: 'Wildlife' },
-  { id: 'galle-coast', label: 'Southern Coast' },
-  { id: 'kandy', label: 'Kandy' },
-] as const

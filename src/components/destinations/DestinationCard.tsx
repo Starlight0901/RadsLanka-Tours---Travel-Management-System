@@ -41,7 +41,9 @@ export function DestinationCard({ destination, variant = 'editorial', className 
           <h3 className="mt-1 font-display text-[2rem] leading-10 tracking-[-0.32px] text-on-brand-soft">
             <Link to={href}>{destination.name}</Link>
           </h3>
-          <p className="mt-1 line-clamp-2 text-[13px] leading-5 text-[#d3e7db]">{destination.shortDescription}</p>
+          {destination.shortDescription.trim() ? (
+            <p className="mt-1 line-clamp-2 text-[13px] leading-5 text-[#d3e7db]">{destination.shortDescription}</p>
+          ) : null}
           <Link
             to={href}
             className="mt-4 inline-flex min-h-11 items-center gap-1 text-[13px] font-semibold tracking-[0.26px] text-gold-soft"
@@ -87,7 +89,9 @@ export function DestinationCard({ destination, variant = 'editorial', className 
       </Link>
       <div className="flex flex-1 flex-col p-4 lg:p-8">
         <h3 className="font-display text-[1.75rem] leading-tight font-semibold text-brand lg:hidden">{destination.name}</h3>
-        <p className="mt-3 text-body text-muted">{destination.shortDescription}</p>
+        {destination.shortDescription.trim() ? (
+          <p className="mt-3 text-body text-muted">{destination.shortDescription}</p>
+        ) : null}
         {destination.tags.length > 0 ? (
           <ul className="mt-4 flex flex-wrap gap-2">
             {destination.tags.map((tag, index) => (

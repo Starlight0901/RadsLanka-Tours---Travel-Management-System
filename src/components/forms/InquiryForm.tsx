@@ -30,13 +30,13 @@ export function InquiryForm() {
 
   return (
     <form className="grid gap-6" onSubmit={handleSubmit('email')} noValidate>
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid min-w-0 gap-4 md:grid-cols-3">
         <FormInput id="inquiry-name" name="name" label="Your Full Name *" autoComplete="name" required placeholder="e.g. Dr. Eleanor Vance" />
         <FormInput id="inquiry-email" name="email" type="email" label="Email Address *" autoComplete="email" required placeholder="eleanor@example.com" />
         <FormInput id="inquiry-phone" name="phone" type="tel" label="Phone / WhatsApp *" autoComplete="tel" required placeholder="+44 7911 123456" />
       </div>
 
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid min-w-0 gap-4 md:grid-cols-3">
         <FormInput id="inquiry-dates" name="dates" type="date" label="Approximate Dates *" required />
         <Select
           id="inquiry-guests"

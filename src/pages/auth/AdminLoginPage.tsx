@@ -100,7 +100,7 @@ export function AdminLoginPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-slate-100 px-4">
       <PageMeta title="Admin login" description="Sign in to the RadsLanka Tours admin panel." />
-      <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-sm ring-1 ring-slate-200">
+      <div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 sm:p-8">
         <img src={siteConfig.logo.src} alt={siteConfig.logo.alt} className="mb-6 h-24 w-auto object-contain" />
         <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Admin panel</p>
         <h1 className="mt-2 text-2xl font-semibold text-slate-900">Sign in</h1>

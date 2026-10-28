@@ -41,21 +41,12 @@ export const tourRegionFilters = [
   { value: 'galle-coast', label: 'Southern Coast' },
 ] as const
 
-export const tourStyleFilters = [
-  { value: 'all', label: 'All Travel Styles' },
-  { value: 'Heritage', label: 'Heritage' },
-  { value: 'Wildlife', label: 'Wildlife' },
-  { value: 'Coast', label: 'Coast' },
-  { value: 'Tea Country', label: 'Tea Country' },
-] as const
-
 export const tourQuickFilters = ['Wildlife', 'Tea Country', 'Coast'] as const
 
 export type TourListFilters = {
   query: string
   duration: string
   region: string
-  style: string
   quick: string
   tags: string[]
   budget: string
@@ -66,7 +57,6 @@ export const defaultTourListFilters: TourListFilters = {
   query: '',
   duration: 'all',
   region: 'all',
-  style: 'all',
   quick: '',
   tags: [],
   budget: 'all',
@@ -75,10 +65,10 @@ export const defaultTourListFilters: TourListFilters = {
 
 export const tourBudgetFilters = [
   { value: 'all', label: 'Any budget' },
-  { value: 'under-150', label: 'Under LKR 150,000' },
-  { value: '150-400', label: 'LKR 150,000 – 400,000' },
-  { value: '400-800', label: 'LKR 400,000 – 800,000' },
-  { value: '800-plus', label: 'LKR 800,000+' },
+  { value: 'under-150', label: 'Under USD 150,000' },
+  { value: '150-400', label: 'USD 150,000 – 400,000' },
+  { value: '400-800', label: 'USD 400,000 – 800,000' },
+  { value: '800-plus', label: 'USD 800,000+' },
 ] as const
 
 function matchesBudget(price: number | undefined, budget: string) {
@@ -108,7 +98,6 @@ export function filterTours(tours: CatalogTour[], filters: TourListFilters): Cat
       tour.shortDescription,
       tour.fullDescription,
       tour.routeLabel,
-      tour.travelStyle,
       ...(tour.destinationNames ?? []),
       ...tour.tags,
       ...tour.destinationIds,
@@ -124,11 +113,6 @@ export function filterTours(tours: CatalogTour[], filters: TourListFilters): Cat
       filters.region === 'all' ||
       tour.destinationIds.includes(filters.region) ||
       (filters.region === 'nuwara-eliya' && tour.destinationIds.includes('ella'))
-    const selectedStyle = filters.style.trim().toLowerCase()
-    const matchesStyle =
-      selectedStyle === 'all' ||
-      tour.category.toLowerCase() === selectedStyle ||
-      (tour.travelStyle ?? '').toLowerCase() === selectedStyle
     const matchesQuick =
       !filters.quick ||
       tour.category === filters.quick ||
@@ -138,7 +122,6 @@ export function filterTours(tours: CatalogTour[], filters: TourListFilters): Cat
       matchesTags &&
       matchesDuration(tour, filters.duration) &&
       matchesRegion &&
-      matchesStyle &&
       matchesQuick &&
       matchesBudget(tour.price, filters.budget)
     )

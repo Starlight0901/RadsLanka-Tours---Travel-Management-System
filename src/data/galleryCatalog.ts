@@ -9,13 +9,16 @@ export const galleryFilters: { value: 'all' | GalleryCategory; label: string }[]
   { value: 'all', label: 'All' },
   { value: 'destinations', label: 'Destinations' },
   { value: 'tours', label: 'Tours' },
-  { value: 'travel', label: 'Travel' },
-  { value: 'culture', label: 'Culture' },
-  { value: 'wildlife', label: 'Wildlife' },
 ]
 
-export function filterPublishedGallery(category: 'all' | GalleryCategory): CatalogGalleryItem[] {
-  const items = listPublishedGallery()
+export function filterGalleryItems(
+  items: CatalogGalleryItem[],
+  category: 'all' | GalleryCategory,
+): CatalogGalleryItem[] {
   if (category === 'all') return items
   return items.filter((item) => item.categories.includes(category))
+}
+
+export function filterPublishedGallery(category: 'all' | GalleryCategory): CatalogGalleryItem[] {
+  return filterGalleryItems(listPublishedGallery(), category)
 }

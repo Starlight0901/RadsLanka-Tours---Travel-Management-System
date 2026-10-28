@@ -35,10 +35,10 @@ export function BespokeJourneySection() {
               </ul>
             </div>
             <div className="flex flex-col gap-3">
-              <ButtonLink to={paths.inquiry} variant="primary" className="lift-button">
+              <ButtonLink to={paths.inquiry} variant="primary" className="lift-button w-full">
                 Create your Own Tour Plan
               </ButtonLink>
-              <ButtonLink to={paths.contact} variant="glass" className="lift-button">
+              <ButtonLink to={paths.contact} variant="glass" className="lift-button w-full">
                 Talk to Us
               </ButtonLink>
             </div>

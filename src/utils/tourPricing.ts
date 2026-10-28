@@ -11,8 +11,17 @@ export function isPricingBasis(value: unknown): value is TourPricingBasis {
   return value === 'per_person' || value === 'for_2' || value === 'for_4' || value === 'custom'
 }
 
-export function formatLkrAmount(price: number): string {
-  return new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 }).format(price)
+const usdFormatter = new Intl.NumberFormat('en-US', {
+  style: 'currency',
+  currency: 'USD',
+  currencyDisplay: 'code',
+  minimumFractionDigits: 0,
+  maximumFractionDigits: 2,
+})
+
+/** Tour prices are stored as plain numbers and presented in USD, e.g. "USD 185,000". */
+export function formatTourPrice(price: number): string {
+  return usdFormatter.format(price)
 }
 
 export function pricingBasisNote(basis: TourPricingBasis, customLabel: string): string {
@@ -33,7 +42,7 @@ export function pricingPreview(price: number, basis: TourPricingBasis, customLab
     return ''
   }
 
-  const amount = `From LKR ${formatLkrAmount(price)}`
+  const amount = `From ${formatTourPrice(price)}`
   if (basis === 'per_person') {
     return `${amount} / person`
   }

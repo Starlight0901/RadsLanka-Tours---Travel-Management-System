@@ -13,17 +13,6 @@ type TourBookingCardProps = {
   tour: CatalogTour
 }
 
-function formatTourPrice(priceLabel?: string): string {
-  if (!priceLabel) {
-    return '[Price]'
-  }
-  if (/^LKR\b/i.test(priceLabel)) {
-    return priceLabel
-  }
-
-  return `LKR ${priceLabel}`
-}
-
 const travelerOptions = [
   { value: '2', label: '2 travelers' },
   { value: '3', label: '3 travelers' },
@@ -52,7 +41,7 @@ export function TourBookingCard({ tour }: TourBookingCardProps) {
         <div>
           <p className="text-[11px] font-bold tracking-[0.55px] text-muted uppercase">From</p>
           <p className="mt-1">
-            <span className="text-4xl font-bold text-brand">{formatTourPrice(tour.priceLabel)}</span>
+            <span className="text-3xl font-bold break-words text-brand sm:text-4xl">{tour.priceLabel ?? '[Price]'}</span>
             {tour.priceNote ? <span className="mt-1 block text-sm font-medium text-muted">{tour.priceNote}</span> : null}
           </p>
         </div>
