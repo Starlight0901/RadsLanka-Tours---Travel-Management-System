@@ -26,7 +26,7 @@ import { ReviewsPage } from '@/pages/public/ReviewsPage.tsx'
 import { TermsPage } from '@/pages/public/TermsPage.tsx'
 import { TourDetailPage } from '@/pages/public/TourDetailPage.tsx'
 import { ToursPage } from '@/pages/public/ToursPage.tsx'
-import { WriteAReviewPage } from '@/pages/public/WriteAReviewPage.tsx'
+import { ShareYourExperiencePage } from '@/pages/public/ShareYourExperiencePage.tsx'
 import { GuestRoute } from '@/routes/GuestRoute.tsx'
 import { paths } from '@/routes/paths.ts'
 import { ProtectedRoute } from '@/routes/ProtectedRoute.tsx'
@@ -70,7 +70,8 @@ export function AppRoutes() {
         <Route path="about" element={<AboutPage />} />
         <Route path="gallery" element={<GalleryPage />} />
         <Route path="reviews" element={<ReviewsPage />} />
-        <Route path="write-a-review" element={<WriteAReviewPage />} />
+        <Route path="share-your-experience" element={<ShareYourExperiencePage />} />
+        <Route path="write-a-review" element={<Navigate to={paths.shareYourExperience} replace />} />
         <Route path="contact" element={<ContactPage />} />
         <Route path="inquiry" element={<InquiryPage />} />
         <Route path="privacy" element={<PrivacyPage />} />

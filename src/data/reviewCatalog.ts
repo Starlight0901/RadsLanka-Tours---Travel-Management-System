@@ -28,15 +28,23 @@ export const reviewExperienceFilters = [
 ] as const
 
 export function filterApprovedReviews(query: string, tag: string): CatalogReview[] {
+  return filterCatalogReviews(listApprovedReviews(), query, tag)
+}
+
+export function filterCatalogReviews(reviews: CatalogReview[], query: string, tag: string): CatalogReview[] {
   const needle = query.trim().toLowerCase()
-  return listApprovedReviews().filter((review) => {
-    const matchesTag = tag === 'all' || (review.tags ?? []).includes(tag)
+  return reviews.filter((review) => {
+    const destinationNames = review.destinationNames ?? []
+    const matchesTag =
+      tag === 'all' || (review.tags ?? []).includes(tag) || destinationNames.includes(tag) || review.tourTitle === tag
     const haystack = [
       review.travelerName,
       review.title,
       review.review,
       review.chauffeurName,
+      review.tourTitle,
       ...(review.tags ?? []),
+      ...destinationNames,
     ]
       .join(' ')
       .toLowerCase()

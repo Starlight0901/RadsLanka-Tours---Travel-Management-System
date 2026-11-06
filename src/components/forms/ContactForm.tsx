@@ -14,7 +14,7 @@ import {
 } from '@/utils/calendarDates.ts'
 import { cn } from '@/utils/cn.ts'
 
-const interestOptions = ['[Custom itinerary]', '[Heritage]', '[Wildlife]', '[Coast]', '[Tea Country]']
+const interestOptions = ['Custom itinerary', 'Heritage', 'Wildlife', 'Coast', 'Tea Country']
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const MAX_DURATION_DAYS = 400

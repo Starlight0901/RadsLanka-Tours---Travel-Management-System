@@ -5,7 +5,6 @@ import {
   doc,
   getDoc,
   getDocs,
-  limit,
   query,
   serverTimestamp,
   updateDoc,
@@ -473,20 +472,7 @@ async function assertUniqueSlug(slug: string, ignoreId?: string) {
 }
 
 export async function listInquiryDestinations(): Promise<DestinationRecord[]> {
-  if (!db) {
-    return []
-  }
-
-  const snapshot = await getDocs(
-    query(
-      collection(db, FIRESTORE_COLLECTIONS.destinations),
-      where('availableForInquiry', '==', true),
-    ),
-  )
-
-  return snapshot.docs
-    .map((item) => toDestination(item.id, item.data()))
-    .sort((a, b) => a.name.localeCompare(b.name))
+  return (await listPublishedDestinations()).filter((destination) => destination.availableForInquiry)
 }
 
 export async function listAllDestinations(): Promise<DestinationRecord[]> {
@@ -513,16 +499,18 @@ export async function listPublishedFeaturedDestinations(): Promise<DestinationRe
 }
 
 export async function getPublishedDestinationBySlug(slug: string): Promise<DestinationRecord | null> {
+  const normalized = slug.trim()
+  if (!normalized) {
+    return null
+  }
+
   const snapshot = await getDocs(
-    query(
-      collection(requireDb(), FIRESTORE_COLLECTIONS.destinations),
-      where('published', '==', true),
-      where('slug', '==', slug),
-      limit(1),
-    ),
+    query(collection(requireDb(), FIRESTORE_COLLECTIONS.destinations), where('slug', '==', normalized)),
   )
-  const match = snapshot.docs[0]
-  return match ? toDestination(match.id, match.data()) : null
+  const match = snapshot.docs
+    .map((item) => toDestination(item.id, item.data()))
+    .find((destination) => destination.published)
+  return match ?? null
 }
 
 export async function createDestination(input: DestinationInput): Promise<string> {

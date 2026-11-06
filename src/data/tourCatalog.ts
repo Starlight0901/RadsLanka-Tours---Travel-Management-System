@@ -109,10 +109,11 @@ export function filterTours(tours: CatalogTour[], filters: TourListFilters): Cat
     const selectedTags = filters.tags.map((tag) => tag.toLowerCase())
     const matchesTags =
       selectedTags.length === 0 || tour.tags.some((tag) => selectedTags.includes(tag.toLowerCase()))
+    const region = filters.region.trim().toLowerCase()
     const matchesRegion =
       filters.region === 'all' ||
-      tour.destinationIds.includes(filters.region) ||
-      (filters.region === 'nuwara-eliya' && tour.destinationIds.includes('ella'))
+      tour.destinationIds.some((id) => id.toLowerCase() === region) ||
+      (tour.destinationNames ?? []).some((name) => name.toLowerCase() === region)
     const matchesQuick =
       !filters.quick ||
       tour.category === filters.quick ||

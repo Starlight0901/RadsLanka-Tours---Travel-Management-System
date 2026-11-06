@@ -4,12 +4,11 @@ import { PlaceholderMedia } from '@/components/common/PlaceholderMedia.tsx'
 import { DestinationEssenceSection } from '@/components/destinations/DestinationEssenceSection.tsx'
 import { DestinationExperiencesSection } from '@/components/destinations/DestinationExperiencesSection.tsx'
 import { DestinationOverviewSidebar } from '@/components/destinations/DestinationOverviewSidebar.tsx'
-import { ReviewCard } from '@/components/reviews/ReviewCard.tsx'
+import { ReviewCarousel } from '@/components/reviews/ReviewCarousel.tsx'
 import { TourCard } from '@/components/tours/TourCard.tsx'
 import { Breadcrumbs } from '@/components/ui/Breadcrumbs.tsx'
 import { ButtonLink } from '@/components/ui/Button.tsx'
 import { Container } from '@/components/ui/Container.tsx'
-import { EmptyState } from '@/components/ui/EmptyState.tsx'
 import { SectionHeading } from '@/components/ui/SectionHeading.tsx'
 import { paths } from '@/routes/paths.ts'
 import type { CatalogDestination } from '@/types/destinations.ts'
@@ -173,47 +172,29 @@ export function DestinationDetail({ destination, tours, reviews }: DestinationDe
         </section>
       ) : null}
 
-      <section className="bg-surface-elevated py-16 lg:py-24">
-        <Container>
-          <SectionHeading
-            title="Verified traveler notes"
-            description="Approved reviews may list one or more destination IDs. Association is optional. Firebase is not wired yet."
-          />
-          {reviews.length === 0 ? (
+      {reviews.length > 0 ? (
+        <section className="bg-surface-elevated py-16 lg:py-24">
+          <Container>
+            <SectionHeading title="Verified traveler notes" />
             <div className="mt-8">
-              <EmptyState
-                title="No destination-linked reviews yet"
-                message="When an approved review includes this destination ID, it will show here."
-              />
+              <ReviewCarousel reviews={reviews} showTour showDestinations={false} />
             </div>
-          ) : (
-            <ul className="mt-8 grid gap-6 lg:grid-cols-3">
-              {reviews.map((review) => (
-                <li key={review.id}>
-                  <ReviewCard
-                    travelerName={review.travelerName}
-                    country={review.country}
-                    dateLabel={review.dateLabel}
-                    rating={review.rating}
-                    review={review.review}
-                  />
-                </li>
-              ))}
-            </ul>
-          )}
-        </Container>
-      </section>
+          </Container>
+        </section>
+      ) : null}
 
-      <section className="bg-brand py-16 text-on-brand lg:py-20">
-        <Container className="text-center">
-          <h2 className="font-display text-[2rem] font-semibold lg:text-[2.75rem]">Start planning this region</h2>
-          <div className="mt-8 flex flex-wrap justify-center gap-3">
-            <ButtonLink to={paths.inquiry} variant="primary">
-              Plan this journey
-            </ButtonLink>
-            <ButtonLink to={paths.tours} variant="glass">
-              Browse tours
-            </ButtonLink>
+      <section className="bg-surface pt-16 pb-24 lg:pt-24 lg:pb-32">
+        <Container>
+          <div className="rounded-2xl border border-[#C99700]/25 bg-[linear-gradient(160deg,rgba(15,40,30,0.96)_0%,rgba(27,67,50,0.92)_100%)] px-8 py-12 text-center text-on-brand shadow-[inset_0_1px_0_rgba(255,223,158,0.14),0_24px_48px_-18px_rgba(15,40,30,0.42)] backdrop-blur-xl lg:px-16 lg:py-16">
+            <h2 className="font-display text-[2rem] font-semibold text-[#FBFDF8] lg:text-[2.75rem]">Start planning this region</h2>
+            <div className="mt-8 flex flex-wrap justify-center gap-3">
+              <ButtonLink to={paths.inquiry} variant="primary">
+                Plan this journey
+              </ButtonLink>
+              <ButtonLink to={paths.tours} variant="glass">
+                Browse tours
+              </ButtonLink>
+            </div>
           </div>
         </Container>
       </section>

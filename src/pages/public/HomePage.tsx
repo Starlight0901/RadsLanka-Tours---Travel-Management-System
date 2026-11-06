@@ -5,7 +5,7 @@ import { Reveal } from '@/components/common/Reveal.tsx'
 import { DestinationCard } from '@/components/destinations/DestinationCard.tsx'
 import { HeroBenefitsStrip } from '@/components/home/HeroBenefitsStrip.tsx'
 import { HomeInquirySection } from '@/components/home/HomeInquirySection.tsx'
-import { ReviewCard } from '@/components/reviews/ReviewCard.tsx'
+import { ReviewCarousel } from '@/components/reviews/ReviewCarousel.tsx'
 import { TourCard } from '@/components/tours/TourCard.tsx'
 import { WhyTravelersSection } from '@/components/tours/WhyTravelersSection.tsx'
 import { ButtonLink } from '@/components/ui/Button.tsx'
@@ -16,9 +16,10 @@ import { Icon } from '@/components/ui/Icon.tsx'
 import { LoadingState } from '@/components/ui/LoadingState.tsx'
 import { SectionHeading } from '@/components/ui/SectionHeading.tsx'
 import { formatLocation } from '@/config/destinationContent.ts'
-import { homeHero, homeReviews } from '@/data/home.ts'
-import { overallPublishedRating } from '@/data/reviewCatalog.ts'
+import { homeHero } from '@/data/home.ts'
+import { usePublicCatalogReviews } from '@/hooks/usePublicCatalogReviews.ts'
 import { paths } from '@/routes/paths.ts'
+import { formatAverageRating } from '@/services/firebase/reviews.ts'
 import { toCatalogDestination } from '@/services/firebase/destinationAdapter.ts'
 import { listPublishedFeaturedDestinations } from '@/services/firebase/destinations.ts'
 import { createDefaultPublicHeroBenefits, getPublicHeroBenefits } from '@/services/firebase/heroBenefits.ts'
@@ -90,6 +91,7 @@ export function HomePage() {
   const [featuredError, setFeaturedError] = useState(false)
   const [heroBenefits, setHeroBenefits] = useState(createDefaultPublicHeroBenefits)
   const [heroBenefitsPending, setHeroBenefitsPending] = useState(true)
+  const { reviews: publicReviews, summary: ratingSummary } = usePublicCatalogReviews()
 
   useEffect(() => {
     let active = true
@@ -198,8 +200,6 @@ export function HomePage() {
     .map((block) => block.text.trim())
     .filter(Boolean)
     .join(' ')
-  const reviewRating = overallPublishedRating()
-
   return (
     <>
       <PageMeta title="Home" description={`${heroSummary}. ${heroContent.heroDescription}`} />
@@ -227,12 +227,15 @@ export function HomePage() {
                 {homeHero.secondaryCta}
               </ButtonLink>
             </div>
-            <p className="mt-8 inline-flex max-w-full items-start gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2.5 text-[13px] text-on-brand-soft backdrop-blur-md">
-              <Icon name="verified" filled className="mt-0.5 text-[15px] text-accent" />
-              <span>
-                <strong className="font-bold text-on-brand">{homeHero.ratingHighlight}</strong> {homeHero.ratingNote}
-              </span>
-            </p>
+            {ratingSummary ? (
+              <p className="mt-8 inline-flex max-w-full items-start gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2.5 text-[13px] text-on-brand-soft backdrop-blur-md">
+                <Icon name="verified" filled className="mt-0.5 text-[15px] text-accent" />
+                <span>
+                  <strong className="font-bold text-on-brand">{formatAverageRating(ratingSummary.average)}/5</strong>{' '}
+                  Overall Ratings
+                </span>
+              </p>
+            ) : null}
           </div>
         </Container>
       </section>
@@ -343,31 +346,23 @@ export function HomePage() {
         <HomeInquirySection />
       </Reveal>
 
-      <section className="py-16 lg:py-24">
-        <Container>
-          <Reveal>
-          <SectionHeading
-            className="reveal-card"
-            align="center"
-            eyebrow="Traveler stories"
-            title="What Our Travelers Are Saying"
-          />
-          {reviewRating != null ? (
-            <p className="reveal-card mt-4 flex items-center justify-center gap-2 text-lg font-bold text-brand">
-              <span>{reviewRating.toFixed(1)}/5</span>
-              <Icon name="star" filled className="text-[20px] text-accent" label={`${reviewRating.toFixed(1)} out of 5`} />
-            </p>
-          ) : null}
-          <ul className="mt-10 grid gap-8 md:grid-cols-2 lg:grid-cols-3 lg:items-start">
-            {homeReviews.map((review, index) => (
-              <li key={`${review.travelerName}-${index}`} className="reveal-card" style={{ animationDelay: `${index * 80}ms` }}>
-                <ReviewCard {...review} />
-              </li>
-            ))}
-          </ul>
-          </Reveal>
-        </Container>
-      </section>
+      {publicReviews.length > 0 ? (
+        <section className="py-16 lg:py-24">
+          <Container>
+            <Reveal>
+              <SectionHeading
+                className="reveal-card"
+                align="center"
+                eyebrow="Traveler stories"
+                title="What Our Travelers Are Saying"
+              />
+              <div className="reveal-card mt-10">
+                <ReviewCarousel reviews={publicReviews} />
+              </div>
+            </Reveal>
+          </Container>
+        </section>
+      ) : null}
     </>
   )
 }

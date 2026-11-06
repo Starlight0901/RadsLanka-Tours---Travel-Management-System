@@ -149,30 +149,3 @@ export const homeInquiry = {
     { value: 'mix', label: 'A mix of styles' },
   ],
 } as const
-
-export const homeReviews = [
-  {
-    travelerName: '[Traveler name]',
-    country: '[Country]',
-    dateLabel: '[Travel date]',
-    rating: 5,
-    review:
-      'Our chauffeur-guide Sanjeewa was exceptional. Traveling with our two kids was completely stress-free. The vehicle was spotless every morning, and his knowledge of local wildlife and village viewpoints transformed our holiday.',
-  },
-  {
-    travelerName: '[Traveler name]',
-    country: '[Country]',
-    dateLabel: '[Travel date]',
-    rating: 5,
-    review:
-      'The tea bungalow stay in Nuwara Eliya and the private safari in Minneriya were once-in-a-lifetime experiences. Highly recommended. Booking with RadsLanka was seamless from start to finish. We will return!',
-  },
-  {
-    travelerName: '[Traveler name]',
-    country: '[Country]',
-    dateLabel: '[Travel date]',
-    rating: 5,
-    review:
-      "From airport pickup to final drop-off, RadsLanka delivered pure excellence. Truly local, warm, and authentic hospitality. The customized pacing suited our desire to explore without rushing through Sri Lanka's sacred sites.",
-  },
-] as const

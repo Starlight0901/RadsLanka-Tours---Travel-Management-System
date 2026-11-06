@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom'
 import { ImageGallery } from '@/components/common/ImageGallery.tsx'
 import { PageMeta } from '@/components/common/PageMeta.tsx'
 import { PlaceholderMedia } from '@/components/common/PlaceholderMedia.tsx'
-import { ReviewCard } from '@/components/reviews/ReviewCard.tsx'
+import { ReviewCarousel } from '@/components/reviews/ReviewCarousel.tsx'
 import { TourBookingCard } from '@/components/tours/TourBookingCard.tsx'
 import { ShareJourneyButton } from '@/components/tours/ShareJourneyButton.tsx'
 import { TourInclusions } from '@/components/tours/TourInclusions.tsx'
@@ -12,16 +12,15 @@ import { TourItinerary } from '@/components/tours/TourItinerary.tsx'
 import { Breadcrumbs } from '@/components/ui/Breadcrumbs.tsx'
 import { ButtonLink } from '@/components/ui/Button.tsx'
 import { Container } from '@/components/ui/Container.tsx'
-import { EmptyState } from '@/components/ui/EmptyState.tsx'
 import { ErrorState } from '@/components/ui/ErrorState.tsx'
 import { Icon } from '@/components/ui/Icon.tsx'
 import { LoadingState } from '@/components/ui/LoadingState.tsx'
 import { SectionHeading } from '@/components/ui/SectionHeading.tsx'
-import { getPublishedReviewsForTour, getRelatedTours } from '@/data/tourCatalog.ts'
+import { usePublicCatalogReviews } from '@/hooks/usePublicCatalogReviews.ts'
 import { NotFoundPage } from '@/pages/public/NotFoundPage.tsx'
 import { associatedTourGalleryImages, listPublishedGalleryItems } from '@/services/firebase/gallery.ts'
 import { toCatalogTours } from '@/services/firebase/tourAdapter.ts'
-import { getPublishedTourBySlug } from '@/services/firebase/tours.ts'
+import { getPublishedTourBySlug, listPublishedTours, relatedPublishedTours } from '@/services/firebase/tours.ts'
 import type { CatalogTour } from '@/types/tours.ts'
 import { paths } from '@/routes/paths.ts'
 import { absoluteAssetUrl, buildTourShareUrl } from '@/utils/shareJourney.ts'
@@ -71,7 +70,13 @@ export function TourDetailPage() {
   const { slug } = useParams()
   const [tour, setTour] = useState<CatalogTour | null>(null)
   const [associatedGallery, setAssociatedGallery] = useState<Array<{ src: string; alt: string; caption?: string }>>([])
+  const [related, setRelated] = useState<CatalogTour[]>([])
   const [status, setStatus] = useState<'loading' | 'ready' | 'missing' | 'error'>('loading')
+  const activeTour = tour && slug && tour.slug === slug ? tour : null
+  const { reviews } = usePublicCatalogReviews({
+    tourId: activeTour?.id,
+    enabled: Boolean(activeTour?.id),
+  })
 
   useEffect(() => {
     let active = true
@@ -79,10 +84,14 @@ export function TourDetailPage() {
     if (!slug) {
       setTour(null)
       setAssociatedGallery([])
+      setRelated([])
       setStatus('missing')
       return
     }
 
+    setTour(null)
+    setAssociatedGallery([])
+    setRelated([])
     setStatus('loading')
     Promise.all([getPublishedTourBySlug(slug), listPublishedGalleryItems().catch(() => [])])
       .then(async ([record, galleryItems]) => {
@@ -92,6 +101,7 @@ export function TourDetailPage() {
         if (!record) {
           setTour(null)
           setAssociatedGallery([])
+          setRelated([])
           setStatus('missing')
           return
         }
@@ -103,11 +113,24 @@ export function TourDetailPage() {
         setTour(next ?? null)
         setAssociatedGallery(associatedTourGalleryImages(record.id, galleryItems))
         setStatus(next ? 'ready' : 'missing')
+
+        try {
+          const published = await listPublishedTours()
+          const relatedCatalog = await toCatalogTours(relatedPublishedTours(record, published))
+          if (active) {
+            setRelated(relatedCatalog)
+          }
+        } catch {
+          if (active) {
+            setRelated([])
+          }
+        }
       })
       .catch(() => {
         if (active) {
           setTour(null)
           setAssociatedGallery([])
+          setRelated([])
           setStatus('error')
         }
       })
@@ -117,7 +140,7 @@ export function TourDetailPage() {
     }
   }, [slug])
 
-  if (status === 'loading') {
+  if (status === 'loading' || (tour && tour.slug !== slug)) {
     return (
       <Container className="py-16">
         <LoadingState label="Loading tour" />
@@ -137,8 +160,6 @@ export function TourDetailPage() {
     return <NotFoundPage />
   }
 
-  const reviews = getPublishedReviewsForTour(tour.id)
-  const related = getRelatedTours(tour)
   const hero = tour.images[0]
   const gallery = mergeGalleryImages(
     tour.images.slice(1).map((image) => ({
@@ -357,36 +378,14 @@ export function TourDetailPage() {
           </section>
         ) : null}
 
-        <section className="mt-16">
-          <SectionHeading
-            title="Verified Traveler Reviews"
-            description="Approved reviews linked by tour ID. Firebase reviews are not wired yet."
-            actionLabel="Read all reviews"
-            actionTo={paths.reviews}
-          />
-          {reviews.length === 0 ? (
-            <div className="mt-6">
-              <EmptyState
-                title="No published reviews for this tour yet"
-                message="When approved reviews exist for this tour ID, they will appear here."
-              />
+        {reviews.length > 0 ? (
+          <section className="mt-16">
+            <SectionHeading title="Verified Traveler Reviews" actionLabel="Read all reviews" actionTo={paths.reviews} />
+            <div className="mt-8">
+              <ReviewCarousel reviews={reviews} showTour={false} showDestinations />
             </div>
-          ) : (
-            <ul className="mt-8 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {reviews.map((review) => (
-                <li key={review.id}>
-                  <ReviewCard
-                    travelerName={review.travelerName}
-                    country={review.country}
-                    dateLabel={review.dateLabel}
-                    rating={review.rating}
-                    review={review.review}
-                  />
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
+          </section>
+        ) : null}
 
         {related.length > 0 ? (
           <section className="mt-20 pb-8">

@@ -50,6 +50,8 @@ export {
   type InquiryStatus,
   type InquiryType,
   type MediaAsset,
+  type AdminNotification,
+  type AdminNotificationType,
   type Review,
   type SiteSettings,
   type Tour,

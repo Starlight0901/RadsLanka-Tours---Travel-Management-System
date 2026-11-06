@@ -200,19 +200,35 @@ export type Vehicle = {
 export type ReviewStatus = 'pending' | 'approved' | 'rejected'
 
 export type Review = {
-  travelerName: string
-  email: string
-  country: string
-  rating: number
-  review: string
-  photo: MediaAsset | null
+  reviewerName: string
   tourId: string
-  travelDate: string
-  status: ReviewStatus
-  featured: boolean
+  destinationIds: string[]
+  rating: number
+  reviewText: string
+  retained: boolean
   createdAt: FirestoreTimestamp
   updatedAt: FirestoreTimestamp
-  publishedAt: FirestoreTimestamp | null
+  /** Legacy and public-query compatibility. New submissions are created as "approved". */
+  status?: ReviewStatus
+  publishedAt?: FirestoreTimestamp | null
+  featured?: boolean
+  travelerName?: string
+  email?: string
+  country?: string
+  review?: string
+  photo?: MediaAsset | null
+  travelDate?: string
+}
+
+export type AdminNotificationType = 'review'
+
+export type AdminNotification = {
+  title: string
+  description: string
+  reviewId: string
+  type: AdminNotificationType
+  read: boolean
+  createdAt: FirestoreTimestamp
 }
 
 export type GalleryItem = {
@@ -359,6 +375,7 @@ export const FIRESTORE_COLLECTIONS = {
   tags: 'tags',
   vehicles: 'vehicles',
   reviews: 'reviews',
+  adminNotifications: 'adminNotifications',
   gallery: 'gallery',
   inquiries: 'inquiries',
   siteSettings: 'siteSettings',

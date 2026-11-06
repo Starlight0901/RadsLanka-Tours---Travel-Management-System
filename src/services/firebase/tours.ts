@@ -5,7 +5,6 @@ import {
   doc,
   getDoc,
   getDocs,
-  limit,
   orderBy,
   query,
   serverTimestamp,
@@ -314,10 +313,16 @@ function createdAtMillis(tour: TourRecord): number {
   return 0
 }
 
-export function tourFeaturesDestination(tour: { itinerary: TourItineraryDay[] }, destinationId: string): boolean {
+export function tourFeaturesDestination(
+  tour: { destinations?: string[]; itinerary: TourItineraryDay[] },
+  destinationId: string,
+): boolean {
   const id = destinationId.trim()
   if (!id) {
     return false
+  }
+  if ((tour.destinations ?? []).includes(id)) {
+    return true
   }
   return tour.itinerary.some((day) => day.locations.some((location) => location.destinationId === id))
 }
@@ -351,20 +356,64 @@ export async function listPublishedTours(): Promise<TourRecord[]> {
 }
 
 export async function listPopularTours(): Promise<TourRecord[]> {
-  const firestore = requireDb()
-  const snapshot = await getDocs(
-    query(
-      collection(firestore, FIRESTORE_COLLECTIONS.tours),
-      where('published', '==', true),
-      where('popular', '==', true),
+  return (await listPublishedTours())
+    .filter((tour) => tour.popular)
+    .slice(0, POPULAR_TOUR_LIMIT)
+}
+
+export function relatedPublishedTours(current: TourRecord, all: TourRecord[], limit = 3): TourRecord[] {
+  const others = all.filter((tour) => tour.published && tour.id !== current.id)
+  const destinationIds = new Set(current.destinations)
+  const itineraryIds = new Set(
+    current.itinerary.flatMap((day) =>
+      day.locations.map((location) => location.destinationId?.trim()).filter((id): id is string => Boolean(id)),
     ),
   )
+  const tagIds = new Set(current.tagIds)
 
-  return snapshot.docs
-    .map((item) => toTour(item.id, item.data()))
-    .filter((tour) => tour.published && tour.popular)
-    .sort((a, b) => createdAtMillis(b) - createdAtMillis(a))
-    .slice(0, POPULAR_TOUR_LIMIT)
+  const ranked = others
+    .map((tour) => {
+      let score = 0
+      for (const id of tour.destinations) {
+        if (destinationIds.has(id)) {
+          score += 2
+        }
+      }
+      for (const day of tour.itinerary) {
+        for (const location of day.locations) {
+          const id = location.destinationId?.trim()
+          if (id && itineraryIds.has(id)) {
+            score += 2
+          }
+        }
+      }
+      for (const id of tour.tagIds) {
+        if (tagIds.has(id)) {
+          score += 1
+        }
+      }
+      return { tour, score }
+    })
+    .sort((a, b) => b.score - a.score || createdAtMillis(b.tour) - createdAtMillis(a.tour))
+
+  const picked: TourRecord[] = []
+  for (const item of ranked) {
+    if (picked.length >= limit) {
+      break
+    }
+    if (item.score > 0) {
+      picked.push(item.tour)
+    }
+  }
+  for (const item of ranked) {
+    if (picked.length >= limit) {
+      break
+    }
+    if (!picked.some((tour) => tour.id === item.tour.id)) {
+      picked.push(item.tour)
+    }
+  }
+  return picked
 }
 
 export async function getPublishedTourBySlug(slug: string): Promise<TourRecord | null> {
@@ -375,20 +424,10 @@ export async function getPublishedTourBySlug(slug: string): Promise<TourRecord |
 
   const firestore = requireDb()
   const snapshot = await getDocs(
-    query(
-      collection(firestore, FIRESTORE_COLLECTIONS.tours),
-      where('published', '==', true),
-      where('slug', '==', normalized),
-      limit(1),
-    ),
+    query(collection(firestore, FIRESTORE_COLLECTIONS.tours), where('slug', '==', normalized)),
   )
-  const first = snapshot.docs[0]
-  if (!first) {
-    return null
-  }
-
-  const tour = toTour(first.id, first.data())
-  return tour.published ? tour : null
+  const match = snapshot.docs.map((item) => toTour(item.id, item.data())).find((tour) => tour.published)
+  return match ?? null
 }
 
 export async function listAllTours(): Promise<TourRecord[]> {
@@ -444,8 +483,18 @@ async function assertTourGalleryLimit(tourId: string | undefined, nextImages: Me
   }
 }
 
+async function assertUniqueTourSlug(slug: string, ignoreId?: string) {
+  const snapshot = await getDocs(
+    query(collection(requireDb(), FIRESTORE_COLLECTIONS.tours), where('slug', '==', slug)),
+  )
+  if (snapshot.docs.some((item) => item.id !== ignoreId)) {
+    throw new Error('Another tour already uses this title. Choose a different title.')
+  }
+}
+
 export async function createTour(input: TourInput): Promise<string> {
   const tour = sanitizeTourInput(input)
+  await assertUniqueTourSlug(tour.slug)
   await assertTourGalleryLimit(undefined, tour.images, [])
   const ref = await addDoc(collection(requireDb(), FIRESTORE_COLLECTIONS.tours), {
     ...tour,
@@ -468,6 +517,7 @@ export async function updateTour(id: string, input: TourInput): Promise<void> {
   if (!existing.exists()) {
     throw new Error('This tour could not be found.')
   }
+  await assertUniqueTourSlug(tour.slug, tourId)
   await assertTourGalleryLimit(tourId, tour.images, readImages(existing.data().images))
 
   await updateDoc(ref, {

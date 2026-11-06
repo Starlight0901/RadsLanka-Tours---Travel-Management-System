@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom'
 import { Icon } from '@/components/ui/Icon.tsx'
 import { siteConfig } from '@/config/site.ts'
 import { paths } from '@/routes/paths.ts'
-import { cn } from '@/utils/cn.ts'
+import { toWhatsAppUrl } from '@/utils/whatsapp.ts'
 
 function displayValue(value: string, placeholder: string) {
   return value.trim() || placeholder
@@ -16,39 +16,6 @@ function FooterHeading({ children }: { children: string }) {
         {children}
       </h2>
     </div>
-  )
-}
-
-function FooterSocials({ size = 'desktop' }: { size?: 'desktop' | 'mobile' }) {
-  return (
-    <ul className="flex items-center gap-3">
-      {siteConfig.socialLinks.map((item) => {
-        const classes = cn(
-          'inline-flex items-center justify-center rounded-full bg-white/10 text-on-brand-soft',
-          size === 'mobile' ? 'size-11' : 'size-10',
-        )
-
-        const icon = <Icon name={item.icon} className="text-[15px]" />
-
-        if (!item.href) {
-          return (
-            <li key={item.id}>
-              <span className={classes} aria-label={`${item.label} (not configured)`}>
-                {icon}
-              </span>
-            </li>
-          )
-        }
-
-        return (
-          <li key={item.id}>
-            <a href={item.href} className={classes} aria-label={item.label} rel="noreferrer">
-              {icon}
-            </a>
-          </li>
-        )
-      })}
-    </ul>
   )
 }
 
@@ -70,11 +37,13 @@ function ContactLine({
   value,
   placeholder,
   href,
+  external = false,
 }: {
   icon: string
   value: string
   placeholder: string
   href?: string
+  external?: boolean
 }) {
   const label = displayValue(value, placeholder)
   const content = (
@@ -92,7 +61,11 @@ function ContactLine({
 
   if (href) {
     return (
-      <a href={href} className={classes}>
+      <a
+        href={href}
+        className={classes}
+        {...(external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+      >
         {content}
       </a>
     )
@@ -101,13 +74,51 @@ function ContactLine({
   return <p className={classes}>{content}</p>
 }
 
+function WhatsAppCtaButton({ href, label }: { href: string | null; label: string }) {
+  const className =
+    'inline-flex min-h-12 items-center gap-2 rounded-control border border-white/20 bg-white/10 px-6 py-3 text-sm font-semibold text-on-brand'
+  const content = (
+    <>
+      <Icon name="chat" className="text-[15px]" />
+      {label}
+    </>
+  )
+
+  if (href) {
+    return (
+      <a href={href} className={className} target="_blank" rel="noopener noreferrer">
+        {content}
+      </a>
+    )
+  }
+
+  return (
+    <Link to={paths.contact} className={className}>
+      {content}
+    </Link>
+  )
+}
+
+function FooterCopyright({ year }: { year: number }) {
+  return (
+    <div>
+      <p>
+        © {year} {siteConfig.name}. All rights reserved.
+      </p>
+      <p className="mt-1 text-[10px] leading-4 text-on-brand-dim/80 lg:text-[11px]">
+        Developed &amp; Maintained by Starlight | WeGrow
+      </p>
+    </div>
+  )
+}
+
 export function Footer() {
   const year = siteConfig.copyrightYear ?? new Date().getFullYear()
-  const legalName = displayValue(siteConfig.legalName, siteConfig.placeholders.legalName)
   const phone = siteConfig.phone.trim()
   const email = siteConfig.email.trim()
   const whatsapp = siteConfig.whatsapp.trim()
-  const whatsappHref = whatsapp ? `https://wa.me/${whatsapp.replace(/\D/g, '')}` : undefined
+  const whatsappHref = toWhatsAppUrl(siteConfig.whatsapp)
+  const mailtoHref = email.includes('@') ? `mailto:${email}` : undefined
 
   return (
     <footer className="bg-brand pb-28 text-on-brand-muted lg:pb-12">
@@ -115,7 +126,6 @@ export function Footer() {
         <div className="flex items-center justify-between gap-8 rounded-2xl border border-white/10 bg-brand-muted/70 p-10">
           <div className="max-w-xl">
             <h2 className="font-display text-display text-on-brand-soft">{siteConfig.footer.ctaTitle}</h2>
-            <p className="mt-2 text-body">{siteConfig.footer.ctaBody}</p>
           </div>
           <div className="flex shrink-0 items-center gap-4">
             <Link
@@ -125,28 +135,11 @@ export function Footer() {
               {siteConfig.footer.ctaPrimary}
               <Icon name="arrow_forward" className="text-[14px]" />
             </Link>
-            {whatsappHref ? (
-              <a
-                href={whatsappHref}
-                className="inline-flex min-h-12 items-center gap-2 rounded-control border border-white/20 bg-white/10 px-6 py-3 text-sm font-semibold text-on-brand"
-                rel="noreferrer"
-              >
-                <Icon name="chat" className="text-[15px]" />
-                {siteConfig.footer.ctaSecondary}
-              </a>
-            ) : (
-              <Link
-                to={paths.contact}
-                className="inline-flex min-h-12 items-center gap-2 rounded-control border border-white/20 bg-white/10 px-6 py-3 text-sm font-semibold text-on-brand"
-              >
-                <Icon name="chat" className="text-[15px]" />
-                {siteConfig.footer.ctaSecondary}
-              </Link>
-            )}
+            <WhatsAppCtaButton href={whatsappHref} label={siteConfig.footer.ctaSecondary} />
           </div>
         </div>
 
-        <div className="grid grid-cols-4 gap-12 border-y border-white/10 py-12">
+        <div className="grid grid-cols-3 gap-12 border-y border-white/10 py-12">
           <div>
             <img
               src={siteConfig.logoOnDark.src}
@@ -199,7 +192,7 @@ export function Footer() {
           </div>
 
           <div className="space-y-4">
-            <FooterHeading>Contact concierge</FooterHeading>
+            <FooterHeading>Contact Us Via</FooterHeading>
             <div>
               <p className="text-[11px] font-bold uppercase tracking-[0.275px] text-on-brand-muted/70">Phone</p>
               <ContactLine
@@ -220,7 +213,8 @@ export function Footer() {
                 icon="chat"
                 value={whatsapp}
                 placeholder={siteConfig.placeholders.whatsapp}
-                href={whatsappHref}
+                href={whatsappHref ?? undefined}
+                external={Boolean(whatsappHref)}
               />
             </div>
             <div>
@@ -229,7 +223,7 @@ export function Footer() {
                 icon="mail"
                 value={email}
                 placeholder={siteConfig.placeholders.email}
-                href={email ? `mailto:${email}` : undefined}
+                href={mailtoHref}
               />
             </div>
             <div>
@@ -238,19 +232,10 @@ export function Footer() {
             </div>
           </div>
 
-          <div>
-            <FooterHeading>Connect with us</FooterHeading>
-            <p className="mt-3 text-body">{siteConfig.footer.connectBlurb}</p>
-            <div className="mt-4">
-              <FooterSocials />
-            </div>
-          </div>
         </div>
 
         <div className="flex items-center justify-between py-8 text-nav">
-          <p>
-            © {year} {legalName}. All rights reserved.
-          </p>
+          <FooterCopyright year={year} />
           <p className="flex items-center gap-2">
             <Link to={paths.privacy} className="hover:text-on-brand">
               Privacy Policy
@@ -294,7 +279,7 @@ export function Footer() {
         </div>
 
         <div className="mt-4">
-          <FooterHeading>Contact concierge</FooterHeading>
+          <FooterHeading>Contact Us Via</FooterHeading>
           <div className="mt-1">
             <ContactLine
               icon="call"
@@ -306,29 +291,21 @@ export function Footer() {
               icon="chat"
               value={whatsapp}
               placeholder={siteConfig.placeholders.whatsapp}
-              href={whatsappHref}
+              href={whatsappHref ?? undefined}
+              external={Boolean(whatsappHref)}
             />
             <ContactLine
               icon="mail"
               value={email}
               placeholder={siteConfig.placeholders.email}
-              href={email ? `mailto:${email}` : undefined}
+              href={mailtoHref}
             />
             <ContactLine icon="location_on" value={siteConfig.address} placeholder={siteConfig.placeholders.address} />
           </div>
         </div>
 
-        <div className="mt-4">
-          <FooterHeading>Connect with us</FooterHeading>
-          <div className="mt-2.5">
-            <FooterSocials size="mobile" />
-          </div>
-        </div>
-
         <div className="mt-6 border-t border-white/10 pt-4 text-on-brand-dim">
-          <p className="text-xs leading-6">
-            © {year} {legalName}. All rights reserved.
-          </p>
+          <FooterCopyright year={year} />
           <div className="flex items-center gap-4">
             <Link to={paths.privacy} className="flex min-h-11 items-center text-xs underline">
               Privacy Policy

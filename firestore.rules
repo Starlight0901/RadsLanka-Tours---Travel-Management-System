@@ -74,12 +74,21 @@ rules_version = '2';
 // Public read requires published == true.
 //
 // Collection: reviews
-// Fields: travelerName, email, country, rating, review, photo, tourId,
-//   travelDate, status ("pending" | "approved" | "rejected"), featured,
-//   createdAt, updatedAt, publishedAt
-// Public read requires status == "approved".
-// Public create requires status == "pending" and featured == false.
-// Approved documents include traveler email. Rules cannot hide one field.
+// Fields: reviewerName, tourId, destinationIds, rating (1-5, whole or half),
+//   reviewText, retained, createdAt, updatedAt, status
+//   ("pending" | "approved" | "rejected"), publishedAt
+// New public submissions write status == "approved" and are visible immediately.
+// Legacy documents may still have travelerName, email, country, review, photo,
+//   travelDate, and featured. Public read still requires status == "approved".
+// Destination and tour names are resolved from those collections, not stored here.
+//
+// Collection: adminNotifications
+// Document ID: "review_" + reviewId (prevents duplicate review notifications)
+// Fields: title ("New Review Submitted"), description, reviewId, type ("review"),
+//   read (bool), createdAt
+// Public create is allowed only in the same write as a new review, with a fixed
+//   title/type and a description derived from that review. No public read.
+// Only admins may read, mark read, or delete notification documents.
 //
 // Collection: gallery
 // Fields: imageUrl, publicId, title, optional tourId, optional destinationId,
@@ -236,55 +245,118 @@ service cloud.firestore {
         && optionalBoundedList(data, 'interests', 40);
     }
 
+    function isBoundedId(value, maxLen) {
+      return value is string && value.size() > 0 && value.size() <= maxLen;
+    }
+
+    function isBoundedIdList(value, maxItems, maxLen) {
+      return value is list
+        && value.size() <= maxItems
+        && (value.size() < 1 || isBoundedId(value[0], maxLen))
+        && (value.size() < 2 || isBoundedId(value[1], maxLen))
+        && (value.size() < 3 || isBoundedId(value[2], maxLen))
+        && (value.size() < 4 || isBoundedId(value[3], maxLen))
+        && (value.size() < 5 || isBoundedId(value[4], maxLen))
+        && (value.size() < 6 || isBoundedId(value[5], maxLen))
+        && (value.size() < 7 || isBoundedId(value[6], maxLen))
+        && (value.size() < 8 || isBoundedId(value[7], maxLen))
+        && (value.size() < 9 || isBoundedId(value[8], maxLen))
+        && (value.size() < 10 || isBoundedId(value[9], maxLen))
+        && (value.size() < 11 || isBoundedId(value[10], maxLen))
+        && (value.size() < 12 || isBoundedId(value[11], maxLen));
+    }
+
+    function isValidReviewRating(value) {
+      return value is number
+        && value >= 1
+        && value <= 5
+        && value * 2 == int(value * 2);
+    }
+
+    function isPublishedTour(tourId) {
+      return tourId is string
+        && tourId.size() > 0
+        && tourId.size() <= 128
+        && get(/databases/$(database)/documents/tours/$(tourId)).data.published == true;
+    }
+
+    function reviewNotificationId(reviewId) {
+      return 'review_' + reviewId;
+    }
+
     function isValidPublicReview(data) {
       return data.keys().hasOnly([
-          'travelerName',
-          'email',
-          'country',
-          'rating',
-          'review',
-          'photo',
+          'reviewerName',
           'tourId',
-          'travelDate',
+          'destinationIds',
+          'rating',
+          'reviewText',
+          'retained',
           'status',
-          'featured',
+          'publishedAt',
           'createdAt',
           'updatedAt',
-          'publishedAt',
         ])
         && data.keys().hasAll([
-          'travelerName',
-          'email',
-          'country',
-          'rating',
-          'review',
-          'photo',
+          'reviewerName',
           'tourId',
-          'travelDate',
+          'destinationIds',
+          'rating',
+          'reviewText',
+          'retained',
           'status',
-          'featured',
+          'publishedAt',
           'createdAt',
           'updatedAt',
-          'publishedAt',
         ])
-        && data.status == 'pending'
-        && data.featured == false
-        && data.publishedAt == null
-        && boundedString(data.travelerName, 200)
-        && data.travelerName.size() > 0
-        && boundedString(data.email, 320)
-        && data.email.size() > 0
-        && boundedString(data.country, 100)
-        && boundedString(data.review, 5000)
-        && data.review.size() > 0
-        && boundedString(data.tourId, 128)
-        && boundedString(data.travelDate, 40)
-        && data.rating is number
-        && data.rating >= 1
-        && data.rating <= 5
-        && (data.photo == null || isMediaAsset(data.photo))
+        && data.status == 'approved'
+        && data.retained == false
+        && data.publishedAt == request.time
+        && boundedString(data.reviewerName, 200)
+        && data.reviewerName.size() > 0
+        && boundedString(data.reviewText, 5000)
+        && data.reviewText.size() > 0
+        && isPublishedTour(data.tourId)
+        && isValidReviewRating(data.rating)
+        && isBoundedIdList(data.destinationIds, 12, 128)
         && data.createdAt == request.time
         && data.updatedAt == request.time;
+    }
+
+    function isValidPublicReviewNotification(data, notificationId) {
+      return data.keys().hasOnly([
+          'title',
+          'description',
+          'reviewId',
+          'type',
+          'read',
+          'createdAt',
+        ])
+        && data.keys().hasAll([
+          'title',
+          'description',
+          'reviewId',
+          'type',
+          'read',
+          'createdAt',
+        ])
+        && data.title == 'New Review Submitted'
+        && data.type == 'review'
+        && data.read == false
+        && boundedString(data.reviewId, 128)
+        && data.reviewId.size() > 0
+        && notificationId == reviewNotificationId(data.reviewId)
+        && boundedString(data.description, 280)
+        && data.createdAt == request.time
+        && existsAfter(/databases/$(database)/documents/reviews/$(data.reviewId))
+        && getAfter(/databases/$(database)/documents/reviews/$(data.reviewId)).data.createdAt == request.time
+        && data.description == getAfter(/databases/$(database)/documents/reviews/$(data.reviewId)).data.reviewerName + ' submitted a new review.';
+    }
+
+    function isValidNotificationReadUpdate() {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read'])
+        && request.resource.data.read is bool
+        && request.resource.data.read == true;
     }
 
     // Denied for everyone who is not already an owner or admin.
@@ -349,8 +421,17 @@ service cloud.firestore {
 
     match /reviews/{reviewId} {
       allow read: if isAdmin() || resource.data.status == 'approved';
-      allow create: if isAdmin() || isValidPublicReview(request.resource.data);
+      allow create: if isAdmin() || (
+        isValidPublicReview(request.resource.data)
+        && existsAfter(/databases/$(database)/documents/adminNotifications/$(reviewNotificationId(reviewId)))
+      );
       allow update, delete: if isAdmin();
+    }
+
+    match /adminNotifications/{notificationId} {
+      allow read, delete: if isAdmin();
+      allow create: if isValidPublicReviewNotification(request.resource.data, notificationId);
+      allow update: if isAdmin() && isValidNotificationReadUpdate();
     }
 
     match /inquiries/{inquiryId} {

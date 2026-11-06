@@ -15,10 +15,11 @@ export const env = {
     cloudName: readEnv('VITE_CLOUDINARY_CLOUD_NAME'),
     uploadPreset: readEnv('VITE_CLOUDINARY_UPLOAD_PRESET'),
   },
+  publicSiteUrl: readEnv('VITE_PUBLIC_SITE_URL'),
 } as const
 
 export const isFirebaseConfigured = Boolean(
   env.firebase.apiKey && env.firebase.projectId && env.firebase.appId,
 )
 
-export const isCloudinaryConfigured = Boolean(env.cloudinary.cloudName)
+export const isCloudinaryConfigured = Boolean(env.cloudinary.cloudName && env.cloudinary.uploadPreset)

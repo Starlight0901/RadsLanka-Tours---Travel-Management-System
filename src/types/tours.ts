@@ -84,4 +84,6 @@ export type CatalogReview = {
   photoAlt?: string
   status: ReviewStatus
   published: boolean
+  tourTitle?: string
+  destinationNames?: string[]
 }

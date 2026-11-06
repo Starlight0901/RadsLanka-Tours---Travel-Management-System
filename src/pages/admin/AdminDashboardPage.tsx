@@ -4,7 +4,7 @@ import { PageMeta } from '@/components/common/PageMeta.tsx'
 const metrics = [
   { label: 'Total tours', hint: 'Counts published and draft tours from Firestore' },
   { label: 'Destinations', hint: 'Destination documents' },
-  { label: 'Reviews', hint: 'Includes pending submissions' },
+  { label: 'Reviews', hint: 'Submitted traveler reviews' },
   { label: 'New inquiries', hint: 'Status = New' },
   { label: 'Bookings', hint: 'Phase 2 module — placeholder only' },
 ]

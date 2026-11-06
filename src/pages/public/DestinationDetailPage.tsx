@@ -6,10 +6,11 @@ import { Container } from '@/components/ui/Container.tsx'
 import { ErrorState } from '@/components/ui/ErrorState.tsx'
 import { LoadingState } from '@/components/ui/LoadingState.tsx'
 import { isFirebaseConfigured } from '@/config/env.ts'
-import { getDestinationBySlug, getPublishedReviewsForDestination } from '@/data/destinationCatalog.ts'
+import { getDestinationBySlug } from '@/data/destinationCatalog.ts'
 import { NotFoundPage } from '@/pages/public/NotFoundPage.tsx'
 import { applyFirestoreDestination, toCatalogDestination } from '@/services/firebase/destinationAdapter.ts'
 import { getPublishedDestinationBySlug, type DestinationRecord } from '@/services/firebase/destinations.ts'
+import { usePublicCatalogReviews } from '@/hooks/usePublicCatalogReviews.ts'
 import { listPublishedGalleryItems, type GalleryRecord } from '@/services/firebase/gallery.ts'
 import { toCatalogTours } from '@/services/firebase/tourAdapter.ts'
 import { filterToursFeaturingDestination, listPublishedTours } from '@/services/firebase/tours.ts'
@@ -23,6 +24,11 @@ export function DestinationDetailPage() {
   const [featuredTours, setFeaturedTours] = useState<CatalogTour[]>([])
   const [loadError, setLoadError] = useState<string | null>(null)
   const [firestoreReady, setFirestoreReady] = useState(!isFirebaseConfigured)
+  const matchingDestinationId = record && slug && record.slug === slug ? record.id : ''
+  const { reviews } = usePublicCatalogReviews({
+    destinationId: matchingDestinationId,
+    enabled: Boolean(matchingDestinationId),
+  })
 
   useEffect(() => {
     setRecord(null)
@@ -92,13 +98,12 @@ export function DestinationDetailPage() {
   const matchingRecord = record && slug && record.slug === slug ? record : null
 
   const destination = useMemo(() => {
-    if (catalogDestination && matchingRecord) {
-      return applyFirestoreDestination(catalogDestination, matchingRecord, galleryItems)
-    }
     if (matchingRecord) {
-      return toCatalogDestination(matchingRecord, galleryItems)
+      return catalogDestination
+        ? applyFirestoreDestination(catalogDestination, matchingRecord, galleryItems)
+        : toCatalogDestination(matchingRecord, galleryItems)
     }
-    if (catalogDestination) {
+    if (!isFirebaseConfigured && catalogDestination) {
       return catalogDestination
     }
     return undefined
@@ -134,7 +139,7 @@ export function DestinationDetailPage() {
       <DestinationDetail
         destination={destination}
         tours={matchingRecord ? featuredTours : []}
-        reviews={getPublishedReviewsForDestination(destination.id)}
+        reviews={reviews}
       />
     </>
   )

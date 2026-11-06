@@ -18,7 +18,6 @@ import {
   filterTours,
   tourBudgetFilters,
   tourDurationFilters,
-  tourRegionFilters,
   type TourListFilters,
 } from '@/data/tourCatalog.ts'
 import { toCatalogTours } from '@/services/firebase/tourAdapter.ts'
@@ -50,6 +49,26 @@ export function ToursPage() {
       }
     }
     return [...names].sort((a, b) => a.localeCompare(b))
+  }, [publishedTours])
+  const regionOptions = useMemo(() => {
+    const options = new Map<string, string>()
+    for (const tour of publishedTours) {
+      const ids = tour.destinationIds ?? []
+      const names = tour.destinationNames ?? []
+      ids.forEach((id, index) => {
+        const slug = id.trim()
+        const name = names[index]?.trim()
+        if (slug) {
+          options.set(slug, name || slug)
+        }
+      })
+    }
+    return [
+      { value: 'all', label: 'All Regions' },
+      ...[...options.entries()]
+        .sort((a, b) => a[1].localeCompare(b[1]))
+        .map(([value, label]) => ({ value, label })),
+    ]
   }, [publishedTours])
 
   useEffect(() => {
@@ -110,6 +129,7 @@ export function ToursPage() {
           <FilterFields
             filters={filters}
             availableTags={availableTags}
+            regionOptions={regionOptions}
             onChange={update}
             onReset={() => setFilters(defaultTourListFilters)}
           />
@@ -133,6 +153,7 @@ export function ToursPage() {
         <FilterFields
           filters={filters}
           availableTags={availableTags}
+          regionOptions={regionOptions}
           onChange={update}
           onReset={() => setFilters(defaultTourListFilters)}
         />
@@ -216,11 +237,13 @@ function filtersAreActive(filters: TourListFilters) {
 function FilterFields({
   filters,
   availableTags,
+  regionOptions,
   onChange,
   onReset,
 }: {
   filters: TourListFilters
   availableTags: string[]
+  regionOptions: Array<{ value: string; label: string }>
   onChange: <K extends keyof TourListFilters>(key: K, value: TourListFilters[K]) => void
   onReset: () => void
 }) {
@@ -247,7 +270,7 @@ function FilterFields({
         <GlassFilterSelect
           label="Region"
           value={filters.region}
-          options={tourRegionFilters.map((option) => ({ value: option.value, label: option.label }))}
+          options={regionOptions}
           onChange={(value) => onChange('region', value)}
           className="lg:w-40"
         />

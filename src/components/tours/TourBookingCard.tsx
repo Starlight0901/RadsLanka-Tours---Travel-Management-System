@@ -51,20 +51,16 @@ export function TourBookingCard({ tour }: TourBookingCardProps) {
         </span>
       </div>
 
-      <ul className="mt-5 space-y-2 text-[13px] text-muted">
-        <li className="flex items-start gap-2">
-          <Icon name="check" className="mt-0.5 text-[16px] text-brand" />
-          [Private chauffeur-guide]
-        </li>
-        <li className="flex items-start gap-2">
-          <Icon name="check" className="mt-0.5 text-[16px] text-brand" />
-          [Handpicked stays]
-        </li>
-        <li className="flex items-start gap-2">
-          <Icon name="check" className="mt-0.5 text-[16px] text-brand" />
-          [Flexible private itinerary]
-        </li>
-      </ul>
+      {tour.inclusions.filter(Boolean).length > 0 ? (
+        <ul className="mt-5 space-y-2 text-[13px] text-muted">
+          {tour.inclusions.filter(Boolean).slice(0, 3).map((item) => (
+            <li key={item} className="flex items-start gap-2">
+              <Icon name="check" className="mt-0.5 text-[16px] text-brand" />
+              {item}
+            </li>
+          ))}
+        </ul>
+      ) : null}
 
       <form className="mt-6 space-y-4" onSubmit={onSubmit}>
         <FormInput name="departureDate" label="Preferred Departure Date" type="date" required />
